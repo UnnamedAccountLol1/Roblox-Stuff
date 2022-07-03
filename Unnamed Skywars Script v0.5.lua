@@ -1,4 +1,4 @@
-print("version: 0.7")
+warn("Version 1")
 
 _, Protected_by_MoonSecV2, Discord = 'discord.gg/gQEH2uZxUk'
 

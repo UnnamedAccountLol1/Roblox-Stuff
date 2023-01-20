@@ -1,2 +1,2 @@
 # Roblox-Stuff
-Repository for lua scripts (Mostly for roblox)
+Repository for LUAU scripts

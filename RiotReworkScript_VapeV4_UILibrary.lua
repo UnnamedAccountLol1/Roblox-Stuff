@@ -393,6 +393,7 @@ local function MadnessHighlight(toggle)
     else
         for i,_ in pairs(madness_auras) do
             madness_auras[i]:Destroy()
+            madness_auras[i] = nil
         end 
         if madnessFakeHighlight then
             madnessFakeHighlight:Destroy()
@@ -551,9 +552,11 @@ local Madness = Utility.CreateOptionsButton({
                             firesignal(rep.Remotes.MAlert.OnClientEvent, unpack({"Purple", " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
                         end)
                     else
-                        for i,v in pairs(getconnections(rep.Remotes.MAlert.OnClientEvent)) do
-                            v:Fire(unpack({"Purple", " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
-                        end
+                        pcall(function()
+                            for i,v in pairs(getconnections(rep.Remotes.MAlert.OnClientEvent)) do
+                                v:Fire(unpack({"Purple", " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
+                            end
+                        end)
                     end
                 else
                     if firesignal then
@@ -561,9 +564,11 @@ local Madness = Utility.CreateOptionsButton({
                             firesignal(rep.Remotes.MAlert.OnClientEvent, unpack({nil, " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
                         end)
                     elseif getconnections then
-                        for i,v in pairs(getconnections(rep.Remotes.MAlert.OnClientEvent)) do
-                            v:Fire(unpack({nil, " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
-                        end
+                        pcall(function()
+                            for i,v in pairs(getconnections(rep.Remotes.MAlert.OnClientEvent)) do
+                                v:Fire(unpack({nil, " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
+                            end
+                        end)
                     end
                 end
                 cl:SetAttribute("MadnessMode", true)

@@ -1,6 +1,6 @@
--- hi there congrats on decompiling this, if you are going to use some of my code atleast credit me as i did with xylex and vynixu, don't be a skid k thx.
+-- if you are going to use some of my shitty code atleast credit me as i did with xylex and vynixu, don't be a skid k thx.
 --
--- also i know that astrix is looking here
+-- also i know that astrix is probably looking here but i don't care anyways
 --
 -- credits to 7GrandDad / xylex / developer of vape v4 for roblox and RegularVynixu for some code
 --// Game check

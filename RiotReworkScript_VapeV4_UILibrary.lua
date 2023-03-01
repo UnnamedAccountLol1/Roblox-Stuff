@@ -825,26 +825,25 @@ local HideName = Utility.CreateOptionsButton({
     end,
     ["HoverText"] = "Hides your name or riot guis (not chat or roblox menu, mostly usefull for recording)", -- text that will show up after hovering over the button (optional)
 })
+local nocdjump0 = false
 local NoJumpCooldown = Utility.CreateOptionsButton({
     ["Name"] = "No jump cooldown", -- name of object
     ["Function"] = function(callback) -- function that is called when toggled
+        nocdjump0 = callback
         if callback then
             task.spawn(function()
                 repeat task.wait()
-                    if not callback then
+                    if nocdjump0 then
+                        for _,v in pairs(getconnections(uis.JumpRequest)) do 
+                            v:Disable()
+                        end
+                    else
                         break
                     end
-                    for _,v in pairs(getconnections(uis.JumpRequest)) do
-                        if v.State then
-                            v:Disable()
-                        else
-                            break
-                        end
-                    end
-                until false or not callback 
+                until false
             end)
         else
-            for i = 1,5 do
+            for i = 1,5 do task.wait(.15)
                 for _,v in pairs(getconnections(uis.JumpRequest)) do
                     v:Enable()
                 end

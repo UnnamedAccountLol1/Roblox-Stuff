@@ -1073,8 +1073,8 @@ local autostomp0v = false
 local AutoStomp = Combat.CreateOptionsButton({
     ["Name"] = "Auto stomp", -- name of object
     ["Function"] = function(callback) -- function that is called when toggled
-        if callback then
-            autostomp0v = callback
+        autostomp0v = callback
+        if callback then     
             task.spawn(function()
                 repeat task.wait(.25)
                     if not autostomp0v then break end
@@ -1087,7 +1087,7 @@ local AutoStomp = Combat.CreateOptionsButton({
                             end)
                         end
                     end
-                until not autostomp0v
+                until not autostomp0v or false
             end)
         end
     end,

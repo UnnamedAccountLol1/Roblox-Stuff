@@ -337,11 +337,13 @@ local function Old_HitNearbyPlayer() -- Just saving this here in case astrix add
             cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
             -- friend
             if friendly_mode then -- if whitelist RBX friends is enabled
-                if (not friendCheck(v)) then
+                if not cl:IsFriendsWith(v.UserId) then
                     if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
                         hitVisualEffect(v.Character)
                         cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
                     end
+                else
+                    -- is a friend
                 end
             else -- if not whitelist RBX friends is enabled
                 if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then

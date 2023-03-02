@@ -288,14 +288,12 @@ local function isPlayerTargetable(plr, target, friend)
     return plr ~= cl and plr and (friend and friendCheck(plr) == nil or (not friend)) and isAlive(plr)
 end
 local function getRandomBodyPart(character) -- how would you deal with this astrix?
-    task.spawn(function()
-        local selected
-        repeat task.wait()
-            selected = bodyParts[math.random(1, #bodyParts)]
-        until selected ~= oldBodyPart
-        oldBodyPart = selected
-        return character:FindFirstChild(tostring(selected))
-    end)
+    local selected
+    repeat task.wait()
+        selected = bodyParts[math.random(1, #bodyParts)]
+    until selected ~= oldBodyPart
+    oldBodyPart = selected
+    return character:FindFirstChild(tostring(selected)) 
 end
 local function HitNearbyPlayer()
     if cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) or not cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then return end
@@ -336,24 +334,33 @@ local function Old_HitNearbyPlayer() -- Just saving this here in case astrix add
     --
     for _,v in pairs(plrs:GetChildren()) do
         if isKA_Enabled and v.Name ~= cl.Name and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 and (not v.Character:GetAttribute("Downed")) and isAlive() and getDistance(v.Character.Torso.Position, cl.Character.Torso.Position, false) <= killauraRange then
-             -- First normal hit so CharacterHit can be registered
-            cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
-            -- friend
-            if friendly_mode then -- if whitelist RBX friends is enabled
-                if not cl:IsFriendsWith(v.UserId) then
-                    if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
+            local n, err = pcall(function()
+                -- First normal hit so CharacterHit can be registered
+                if cl.Character:FindFirstChildOfClass("Tool") then
+                    cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                else
+                    return
+                end
+                -- friend
+                if friendly_mode then -- if whitelist RBX friends is enabled
+                    if not cl:IsFriendsWith(v.UserId) then
+                        if cl.Character:FindFirstChildOfClass("Tool") and cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
+                            hitVisualEffect(v.Character)
+                            cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
+                        end
+                    else
+                        -- is a friend
+                    end
+                else -- if not whitelist RBX friends is enabled
+                    if cl.Character:FindFirstChildOfClass("Tool") and cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
                         hitVisualEffect(v.Character)
                         cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
                     end
-                else
-                    -- is a friend
                 end
-            else -- if not whitelist RBX friends is enabled
-                if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
-                    hitVisualEffect(v.Character)
-                    cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
-                end
-            end  
+            end) 
+            if err then
+                warn("Found error: "..err)
+            end
         end
     end 
 end
@@ -889,28 +896,30 @@ local KillAura = Combat.CreateOptionsButton({
         if callback then
             if killauraCircleRange then
                 killauraCircleRange.Parent = workspace.CurrentCamera
-            end
-            task.spawn(function()
-                bind("KillAuraStuff", runService.RenderStepped:Connect(function()
-                    for i,v in pairs(workspace:GetChildren()) do
-                        if isKA_Enabled and killauralookat and (cl.Character and cl.Character:FindFirstChildOfClass("Tool")) then
-                            if v.Name ~= cl.Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (not v:GetAttribute("Downed")) and isAlive() and getDistance(v.Torso.Position, cl.Character.Torso.Position, false) <= killauraRange then
-                                if killauralookat and cl.Character and v then
-                                    pcall(function()
-                                        local root1, root2 = v and v.HumanoidRootPart or v.Torso or v.PrimaryPart, cl.Character and cl.Character.HumanoidRootPart or cl.Character.Torso or cl.Character.PrimaryPart
-                                        cl.Character.HumanoidRootPart.CFrame = CFrame.lookAt(root2.Position, root2.Position + ((root1.Position - root2.Position) * Vector3.new(1, 0, 1)).Unit)
-                                    end)
-                                end
-                                -- Do a jump if not strafing
-                                if (cl.Character.Humanoid.FloorMaterial ~= Enum.Material.Air) and alwaysJump and (not strafing) then
+            end  
+            bind("KillAuraStuff", runService.RenderStepped:Connect(function()
+                for i,v in pairs(workspace:GetChildren()) do
+                    if isKA_Enabled and killauralookat and (cl.Character and cl.Character:FindFirstChildOfClass("Tool")) then
+                        if v.Name ~= cl.Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (not v:GetAttribute("Downed")) and isAlive() and getDistance(v.Torso.Position, cl.Character.Torso.Position, false) <= killauraRange then
+                            if killauralookat and cl.Character and v then
+                                pcall(function()
+                                    local root1, root2 = v and v.HumanoidRootPart or v.Torso or v.PrimaryPart, cl.Character and cl.Character.HumanoidRootPart or cl.Character.Torso or cl.Character.PrimaryPart
+                                    cl.Character.HumanoidRootPart.CFrame = CFrame.lookAt(root2.Position, root2.Position + ((root1.Position - root2.Position) * Vector3.new(1, 0, 1)).Unit)
+                                end)
+                            end
+                            -- Do a jump if not strafing
+                            if cl.Character and (cl.Character.Humanoid.FloorMaterial ~= Enum.Material.Air) and alwaysJump and (not strafing) then
+                                pcall(function()
                                     cl.Character.HumanoidRootPart.Velocity = Vector3.new(cl.Character.HumanoidRootPart.Velocity.X, 40, cl.Character.HumanoidRootPart.Velocity.Z)
-                                end
-                            end 
-                        else
-                            -- do nothing
-                        end
+                                end)
+                            end
+                        end 
+                    else
+                        -- do nothing
                     end
-                end))
+                end
+            end))
+            task.spawn(function()
                 repeat
                     if (not isKA_Enabled) then break end
                     if not cl.Character:FindFirstChildOfClass("Tool") or cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) then
@@ -920,10 +929,8 @@ local KillAura = Combat.CreateOptionsButton({
                             end  
                         until cl.Character:FindFirstChildOfClass("Tool") and not healItems[cl.Character:FindFirstChildOfClass("Tool").Name]
                     end
-                    if isAlive() and cl.Character:FindFirstChildOfClass("Tool") and not table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) and (cl.Character:GetAttribute("Blocking") == false or not uis:IsKeyDown(Enum.KeyCode.F) and cl.Character:GetAttribute("Crouch") == false) then
-                        pcall(function()
-                            Old_HitNearbyPlayer()
-                        end)   
+                    if isAlive() and cl.Character:FindFirstChildOfClass("Tool") and not table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) and (cl.Character:GetAttribute("Blocking") == false or not uis:IsKeyDown(Enum.KeyCode.F) and cl.Character:GetAttribute("Crouch") == false) then                    
+                        Old_HitNearbyPlayer()
                     end 
                     if killauraattackcd then
                         task.wait(getWeaponCooldown())

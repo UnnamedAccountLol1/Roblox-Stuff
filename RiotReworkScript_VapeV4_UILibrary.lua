@@ -359,7 +359,7 @@ local function Old_HitNearbyPlayer() -- Just saving this here in case astrix add
                 end
             end) 
             if err then
-                warn("Found error: "..err)
+                --warn("Found error: "..err)
             end
         end
     end 

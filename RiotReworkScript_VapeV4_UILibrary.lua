@@ -1069,13 +1069,15 @@ AutoHeal.CreateSlider({
     ["HoverText"] = "When your health reaches the % you specified it will heal you.", -- text that will show up after hovering over the button (optional)
     ["Default"] = 40 -- default value (optional)
 })
+local autostomp0v = false
 local AutoStomp = Combat.CreateOptionsButton({
     ["Name"] = "Auto stomp", -- name of object
     ["Function"] = function(callback) -- function that is called when toggled
         if callback then
+            autostomp0v = callback
             task.spawn(function()
                 repeat task.wait(.25)
-                    if not callback then break end
+                    if not autostomp0v then break end
                     for i,v in pairs(plrs:GetChildren()) do
                         if v.Character and cl.Character and v ~= cl then
                             pcall(function()
@@ -1085,7 +1087,7 @@ local AutoStomp = Combat.CreateOptionsButton({
                             end)
                         end
                     end
-                until not callback
+                until not autostomp0v
             end)
         else
             unbind("AutoStomp")

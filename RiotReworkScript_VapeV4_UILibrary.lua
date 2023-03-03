@@ -916,24 +916,24 @@ local KillAura = Combat.CreateOptionsButton({
             end))
             task.spawn(function()
                 repeat
+                    if (not isKA_Enabled) then break end
+                    if not cl.Character:FindFirstChildOfClass("Tool") or cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) then
+                        repeat task.wait()
+                            if not isKA_Enabled then 
+                                return
+                            end  
+                        until cl.Character:FindFirstChildOfClass("Tool") and not healItems[cl.Character:FindFirstChildOfClass("Tool").Name]
+                    end
                     pcall(function()
-                        if (not isKA_Enabled) then break end
-                        if not cl.Character:FindFirstChildOfClass("Tool") or cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) then
-                            repeat task.wait()
-                                if not isKA_Enabled then 
-                                    return
-                                end  
-                            until cl.Character:FindFirstChildOfClass("Tool") and not healItems[cl.Character:FindFirstChildOfClass("Tool").Name]
-                        end
                         if isAlive() and cl.Character:FindFirstChildOfClass("Tool") and not table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) and (cl.Character:GetAttribute("Blocking") == false or not uis:IsKeyDown(Enum.KeyCode.F) and cl.Character:GetAttribute("Crouch") == false) then                               
                             Old_HitNearbyPlayer()    
                         end 
-                        if killauraattackcd then
-                            task.wait(getWeaponCooldown())
-                        else
-                            task.wait()
-                        end 
-                    end)  
+                    end)
+                    if killauraattackcd then
+                        task.wait(getWeaponCooldown())
+                    else
+                        task.wait()
+                    end  
                 until (not isKA_Enabled)
             end)
         else

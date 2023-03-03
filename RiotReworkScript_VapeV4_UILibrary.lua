@@ -850,11 +850,13 @@ local NoJumpCooldown = Utility.CreateOptionsButton({
                 until false
             end)
         else
-            for i = 1,5 do task.wait(.15)
-                for _,v in pairs(getconnections(uis.JumpRequest)) do
-                    v:Enable()
+            task.spawn(function()
+                for i = 1,5 do task.wait(.1)
+                    for _,v in pairs(getconnections(uis.JumpRequest)) do
+                        v:Enable()
+                    end
                 end
-            end
+            end)
         end
     end,
     ["HoverText"] = "Toggles the annoying cooldown for jumping", -- text that will show up after hovering over the button (optional)
@@ -1078,7 +1080,7 @@ local AutoStomp = Combat.CreateOptionsButton({
                     for i,v in pairs(plrs:GetChildren()) do
                         if v.Character and cl.Character and v ~= cl then
                             pcall(function()
-                                if v and cl.Character and (v.Character.PrimaryPart.Position - cl.Character.PrimaryPart.Position).Magnitude <= 10 and v.Character:GetAttribute("Downed") then
+                                if v and cl.Character and (v.Character.PrimaryPart.Position - cl.Character.PrimaryPart.Position).Magnitude <= 8 and v.Character:GetAttribute("Downed") then
                                     MainRemote:FireServer({["KeyCode"] = Enum.KeyCode.X})
                                 end
                             end)

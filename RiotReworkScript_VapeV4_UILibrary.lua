@@ -1,8 +1,9 @@
--- if you are going to use some of my shitty code atleast credit me as i did with xylex and vynixu, don't be a skid k thx.
+-- Woah. Congrats on getting the source code, enjoy it skid!
 --
 -- also i know that astrix is probably looking here but i don't care anyways
 --
--- credits to 7GrandDad / xylex / developer of vape v4 for roblox and RegularVynixu for some code
+-- Credits to 7GrandDad / xylex / developer of vape v4 for roblox and RegularVynixu for some code
+--
 --// Game check
 if game.PlaceId ~= 6664138223 then
     game:GetService("Players").LocalPlayer:Kick("This script only works in "..game:GetService("MarketplaceService"):GetProductInfo(6664138223).Name)
@@ -35,6 +36,7 @@ local deb = game:GetService("Debris")
 local httpservice = game:GetService("HttpService")
 local contextaction = game:GetService("ContextActionService")
 local guiservice = game:GetService("GuiService")
+local ugcvalidation = game:GetService("UGCValidationService")
 --// Executor variables
 local getcustomassetfromexecutor = getcustomasset or getsynasset
 --// Variables  
@@ -122,6 +124,17 @@ local fly_vertical_speed = 1
 local fly_up = false
 local fly_down = false
 local flypos_y = 0
+--[[
+--// Strafe vars
+local strafing = false
+local strafenum = 0
+local oldstrafe = nil
+local lastreal = nil
+local targetstrafeDistance = 8
+local targetstrafespeed = 40
+local targetstrafenum = 0
+local flip = false
+]]--
 --// Cooldowns
 local weaponsLibrary = require(rep:WaitForChild("Weapons"))
 local original_equip_delays = {}
@@ -134,7 +147,7 @@ local madness_auras = {}
 local character_speed = 12
 local speed_mode = "CFrame"
 --// LOL YOU HEAL WHILE EXPLOITING WHAT A LOSER - average riot player
-local healItems = {"Pizza", "Apple", "Cheese", "Burger", "Bandage Kit"}
+local healItems = {"Pizza", "Apple", "Cheese", "Burger", "Bandage Kit", "Rage Potion"}
 --// Body parts for less "SUSpicion" using kill aura
 local bodyParts = {"Head", "Left Arm", "Left Leg", "Right Arm", "Right Leg", "Torso"}
 local oldBodyPart = nil
@@ -195,7 +208,7 @@ else
 end
 if Krnl or KRNL_LOADED then
     isUsingKRNL = true
-    local f = shared.GuiLibrary["CreateNotification"]("Exploit warning (KRNL)", "Some assets will not load while using KRNL\nYou have a high chance of being banned by unexpected client behavior too.", 8, "assets/WarningNotification.png")
+    local f = shared.GuiLibrary["CreateNotification"]("Exploit API warning (KRNL)", "Some assets will not load while using KRNL\nYou have a high chance of being banned by unexpected client behavior too.", 8, "assets/WarningNotification.png")
     f.Frame.Frame.ImageColor3 = Color3.fromRGB(236, 129, 44)
 end
 --// Functions
@@ -299,35 +312,74 @@ local function getRandomBodyPart(character) -- how would you deal with this astr
     oldBodyPart = selected
     return character:FindFirstChild(tostring(selected)) 
 end
-local function HitNearbyPlayer() -- Just saving this here in case astrix adds annother easy to bypass anticheat
-    if cl.Character:FindFirstChildOfClass("Tool") and table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) or not cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then return end
-    --
-    for _,v in pairs(plrs:GetChildren()) do
-        if isKA_Enabled and v.Name ~= cl.Name and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 and (not v.Character:GetAttribute("Downed")) and isAlive() and getDistance(v.Character.Torso.Position, cl.Character.Torso.Position, false) <= killauraRange then
-            -- First normal hit so CharacterHit can be registered
-            if cl.Character:FindFirstChildOfClass("Tool") then
-                cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
-            else
-                return
+local function GetRoot(obj)
+    if obj:IsA("Player") then
+        return obj.Character and obj.Character:FindFirstChild("HumanoidRootPart") or obj.Character:FindFirstChild("Torso") or obj.Character.PrimaryPart
+    elseif obj:IsA("Model") then
+        return obj and obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj.PrimaryPart
+    end
+end
+local function FindValidWeapon()
+    if isAlive() then
+        local possible = cl.Character and cl.Character:FindFirstChildOfClass("Tool")
+        local remote = possible and possible:FindFirstChildOfClass("RemoteEvent")
+        if possible and remote then
+            if string.lower(remote.Name) == "weaponremote" and not table.find(healItems, possible.Name) or not healItems[possible.Name]  then
+                return possible, remote
             end
-            -- friend
-            if friendly_mode then -- if whitelist RBX friends is enabled
-                if not cl:IsFriendsWith(v.UserId) then
-                    if cl.Character:FindFirstChildOfClass("Tool") and cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
-                        hitVisualEffect(v.Character)
-                        cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
-                    end
-                else
-                    -- is a friend
+        end
+    end
+    return nil, nil
+end
+local function HitNearbyPlayer() -- Player only.
+    local Weapon, WRemote = FindValidWeapon()
+    --
+    if Weapon and WRemote then
+        for _,v in pairs(plrs:GetChildren()) do
+            if isKA_Enabled and v.Name ~= cl.Name and v.Character and isAlive(v) and (not v.Character:GetAttribute("Downed")) and isAlive() and getDistance(v.PrimaryPart.Position, GetRoot(cl.Character).Position, false) <= killauraRange then
+                if Weapon.Parent:IsA("Backpack") then
+                    return
                 end
-            else -- if not whitelist RBX friends is enabled
-                if cl.Character:FindFirstChildOfClass("Tool") and cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote") then
-                    hitVisualEffect(v.Character)
-                    cl.Character:FindFirstChildOfClass("Tool"):FindFirstChild("WeaponRemote"):FireServer(unpack({"T", getRandomBodyPart(v.Character), "lol  "}))
+                -- Possible plr
+                local psplayer = plrs:GetPlayerFromCharacter(v)
+                -- Friend check
+                if psplayer and cl:IsFriendsWith(psplayer.UserId) and friendly_mode then
+                    hitVisualEffect(v)
+                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
+                else
+                    hitVisualEffect(v)
+                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
+                end
+            end
+        end 
+    end
+end
+local function HitNearbyHumanoid() -- Any
+    local Weapon, WRemote = FindValidWeapon()
+    --
+    if Weapon and WRemote then
+        for _,v in pairs(workspace:GetChildren()) do
+            if isKA_Enabled and v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v.Name ~= cl.Name and (GetRoot(v).Position - GetRoot(cl).Position).Magnitude <= killauraRange then
+                if Weapon.Parent:IsA("Backpack") then
+                    return
+                end
+                -- Possible plr
+                local psplayer = plrs:GetPlayerFromCharacter(v)
+                -- Friend check
+                if psplayer and cl:IsFriendsWith(psplayer.UserId) and friendly_mode then
+                    hitVisualEffect(v)
+                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
+                else
+                    hitVisualEffect(v)
+                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
                 end
             end
         end
-    end 
+    end
 end
 local function RageAura(toggle) -- Even though this one is old i still use it
     if toggle then
@@ -383,12 +435,16 @@ local function MadnessHighlight(toggle)
     end    
 end
 local function IsA_Staff(player) -- big mistake to have your mods in a group!
-    local rank = player:GetRankInGroup(10294339)
+    local s, rank = pcall(function()
+        return player:GetRankInGroup(10294339)
+    end)
     --
-    if not detectfromTesters and rank > 50 then
+    if s and not detectfromTesters and rank > 50 then
         return true, rank
-    elseif detectfromTesters and rank > 1 then
-        return true, rank   
+    elseif s and detectfromTesters and rank > 1 then
+        return true, rank  
+    elseif not s then
+        -- HTTP ERROR 
     end
 end
 local function getWeaponCooldown() -- going to make this default if astrix adds an anti remote spam or something, big mistake to have your weapon's info in a module!
@@ -404,12 +460,12 @@ local function getWeaponCooldown() -- going to make this default if astrix adds 
         end
     end
 end
-local function mainContextFunc(name, state)
+--[[local function mainContextFunc(name, state)
     if name == "BackpackToggle" and state == Enum.UserInputState.Begin then
         backpackenabled = not backpackenabled
     end
 end
-contextaction:BindAction("BackpackToggle", mainContextFunc, false, Enum.KeyCode.Backquote)
+contextaction:BindAction("BackpackToggle", mainContextFunc, false, Enum.KeyCode.Backquote)]]--
 local function OnCharacterSpawned(char)
     backpackenabled = false
     task.spawn(function()
@@ -466,6 +522,26 @@ local function AddHitboxToEquipped(ammount, offset, dir) -- Thanks astrix for ma
             end
         end        
     end
+end
+local function isPlayerTargetable(plr, target, friend)
+    return plr ~= cl and plr and (friend and friendly_mode and cl:IsFriendsWith(plr and plr.UserId) == false or (not friend)) and isAlive(plr)
+end
+local function GetNearestHumanoidToPosition(player, distance)
+	local closest, returnedplayer = distance, nil
+    if isAlive() then
+        for i, v in pairs(plrs:GetChildren()) do
+            if isPlayerTargetable((player and v or nil), true, true) and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Head") then
+                pcall(function()
+                    local mag = (cl.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                    if mag <= closest then
+                        closest = mag
+                        returnedplayer = v                 
+                    end
+                end)
+            end
+        end
+	end
+	return returnedplayer
 end
 --
 local Combat = uilib["ObjectsThatCanBeSaved"]["CombatWindow"]["Api"]
@@ -531,29 +607,13 @@ local Madness = Utility.CreateOptionsButton({
                 MadnessHighlight(false)
             else
                 if cl.UserId == 98888707 then
-                    if firesignal then
-                        pcall(function()
-                            firesignal(rep.Remotes.MAlert.OnClientEvent, unpack({"Purple", " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
-                        end)
-                    else
-                        pcall(function()
-                            for i,v in pairs(getconnections(rep.Remotes.MAlert.OnClientEvent)) do
-                                v:Fire(unpack({"Purple", " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
-                            end
-                        end)
-                    end
+                    pcall(function()
+                        firesignal(rep.Remotes.MAlert.OnClientEvent, unpack({"Purple", " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
+                    end)
                 else
-                    if firesignal then
-                        pcall(function()
-                            firesignal(rep.Remotes.MAlert.OnClientEvent, unpack({nil, " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
-                        end)
-                    elseif getconnections then
-                        pcall(function()
-                            for i,v in pairs(getconnections(rep.Remotes.MAlert.OnClientEvent)) do
-                                v:Fire(unpack({nil, " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
-                            end
-                        end)
-                    end
+                    pcall(function()
+                        firesignal(rep.Remotes.MAlert.OnClientEvent, unpack({nil, " || ", tostring(madnessmoderandommessages[math.random(1, #madnessmoderandommessages)]), "please remember that this is clientsided || please remember that this is clientsided", 20, nil, UDim2.new(1, 0, 0, 80), 9000}))
+                    end)
                 end
                 cl:SetAttribute("MadnessMode", true)
                 if (not oldmadnesstheme and not oldermadnesstheme) then
@@ -761,54 +821,6 @@ local WarnOnStaffJoin = Utility.CreateOptionsButton({
     end,
     ["HoverText"] = "Sends a notification when a staff joins or when it's already on your game",  
 })
-local HideName = Utility.CreateOptionsButton({
-    ["Name"] = "HideName",  
-    ["Function"] = function(callback)  
-        if callback then
-            for i,v in pairs(leaderboardui.Leaderboard.Inner.ScrollingFrame:GetDescendants()) do
-                if v:IsA("TextLabel") or v.ClassName == "TextLabel" then
-                    if v.Text == cl.Name or v.Text == cl.DisplayName then
-                        myleaderboardframe = v.Parent.Parent
-                    end  
-                end
-            end
-            if cl.PlayerGui and cl.PlayerGui:FindFirstChild("Profile") then
-                cl.PlayerGui:FindFirstChild("Profile").Main.TextLabel.Visible = false
-            end
-            if myleaderboardframe ~= nil then
-                myleaderboardframe.PlayerName.Actual.Visible = false
-                myleaderboardframe.PlayerName.Display.Visible = false
-            end
-            bind("autohidename", cl.CharacterAdded:Connect(function() -- idk why i even made this
-                task.wait(.15)
-                for i,v in pairs(leaderboardui.Leaderboard.Inner.ScrollingFrame:GetDescendants()) do
-                    if v:IsA("TextLabel") or v.ClassName == "TextLabel" then
-                        if v.Text == cl.Name or v.Text == cl.DisplayName then
-                            myleaderboardframe = v.Parent.Parent
-                        end  
-                    end
-                end
-                if cl.PlayerGui and cl.PlayerGui:FindFirstChild("Profile") then
-                    cl.PlayerGui:FindFirstChild("Profile").Main.TextLabel.Visible = false
-                end
-                if myleaderboardframe ~= nil then
-                    myleaderboardframe.PlayerName.Actual.Visible = false
-                    myleaderboardframe.PlayerName.Display.Visible = false
-                end
-            end))
-        else
-            unbind("autohidename")
-            if cl.PlayerGui and cl.PlayerGui:FindFirstChild("Profile") then
-                cl.PlayerGui:FindFirstChild("Profile").Main.TextLabel.Visible = true
-            end
-            if myleaderboardframe ~= nil then
-                myleaderboardframe.PlayerName.Actual.Visible = true
-                myleaderboardframe.PlayerName.Display.Visible = true
-            end
-        end
-    end,
-    ["HoverText"] = "Hides your name or riot guis (not chat or roblox menu, mostly usefull for recording, kinda broken tho)",  
-})
 local nocdjump0 = false
 local NoJumpCooldown = Utility.CreateOptionsButton({
     ["Name"] = "No jump cooldown",  
@@ -903,11 +915,13 @@ local KillAura = Combat.CreateOptionsButton({
                     end
                     pcall(function()
                         if isAlive() and cl.Character:FindFirstChildOfClass("Tool") and not table.find(healItems, cl.Character:FindFirstChildOfClass("Tool").Name) and (cl.Character:GetAttribute("Blocking") == false or not uis:IsKeyDown(Enum.KeyCode.F) and cl.Character:GetAttribute("Crouch") == false) then                               
-                            HitNearbyPlayer()    
+                            HitNearbyHumanoid()   
                         end 
                     end)
                     if killauraattackcd then
                         task.wait(getWeaponCooldown())
+                    elseif Weapon and Weapon.Name == "Sign" then
+                        task.wait(2.5) -- Just to prevent bans. :)
                     else
                         task.wait()
                     end  
@@ -1069,21 +1083,6 @@ local AutoStomp = Combat.CreateOptionsButton({
         end
     end,
     ["HoverText"] = "Automatically stomps ANY nearby players",  
-})
-local NoEquipdelay = Combat.CreateOptionsButton({
-    ["Name"] = "No equip delay",  
-    ["Function"] = function(callback)  
-        if callback then
-            for i,_ in pairs(require(rep.Weapons)) do
-                require(rep.Weapons)[i].EquipAttackDelay = 0
-            end
-        else
-            for i,_ in pairs(require(rep.Weapons)) do
-                require(rep.Weapons)[i].EquipAttackDelay = original_equip_delays[i]
-            end
-        end
-    end,
-    ["HoverText"] = "Removes the delay for attacking while equipping a weapon",  
 })
 local currentlylockingon = nil
 local maxLockOnDist = 110
@@ -1332,9 +1331,11 @@ local Fly = Blatant.CreateOptionsButton({
                 if fly_down then
                     flypos_y = flypos_y - (1 * (math.clamp(fly_vertical_speed - 16, 1, 150) * dt))
                 end
-                local flypos = (cl.Character.Humanoid.MoveDirection * (math.clamp(fly_speed - 16, 1, 150) * dt))
-                cl.Character.HumanoidRootPart.CFrame = cl.Character.HumanoidRootPart.CFrame + Vector3.new(flypos.X, (flypos_y - cl.Character.HumanoidRootPart.CFrame.Position.Y), flypos.Z)
-                cl.Character.HumanoidRootPart.Velocity = Vector3.zero or Vector3.new(0, 0, 0) 
+                pcall(function()
+                    local flypos = (cl.Character.Humanoid.MoveDirection * (math.clamp(fly_speed - 16, 1, 150) * dt))
+                    cl.Character.HumanoidRootPart.CFrame = cl.Character.HumanoidRootPart.CFrame + Vector3.new(flypos.X, (flypos_y - cl.Character.HumanoidRootPart.CFrame.Position.Y), flypos.Z)
+                    cl.Character.HumanoidRootPart.Velocity = Vector3.zero or Vector3.new(0, 0, 0) 
+                end)
             end))
         else
             unbind("Fly")
@@ -1479,6 +1480,7 @@ local MysteryBoxESP = Render.CreateOptionsButton({
     ["HoverText"] = "box.",  
 })
 --// World
+local gravval = 196.2
 local Gravity = World.CreateOptionsButton({
     ["Name"] = "Gravity",  
     ["Function"] = function(callback)  
@@ -1493,10 +1495,12 @@ Gravity.CreateSlider({
     ["Min"] = 0,
     ["Max"] = 196,
     ["Function"] = function(val)  
-        workspace.Gravity = gravityEnabled and tonumber(val) or 196.2
+        gravval = val
+        workspace.Gravity = gravityEnabled and tonumber(gravval) or 196.2
     end,
-    ["Default"] = 196  
+    ["Default"] = 196
 })
+workspace.Gravity = gravityEnabled and tonumber(gravval) or 196.2
 --// End of script
 local hooked_emotes = hookfunction(game:GetService("MarketplaceService").UserOwnsGamePassAsync, function(...)
     return bypassEmotes
@@ -1508,8 +1512,14 @@ if not getgenv()._G.BypassedMetas then
         --
         if CallMethod == "FireServer" and self.Name == "MainRemote" and Args[1] == "hello!!" then
             return task.wait(math.huge) or task.wait(9e9)
-        elseif CallMethod == "Kick" and self == cl and (not canbeKickedFromGame and not LeaveOnStaffJoin["Toggle"]) then
+        elseif CallMethod == "Kick" and self == cl and not canbeKickedFromGame then
             return task.wait(math.huge) or task.wait(9e9)
+        elseif CallMethod == "InvokeServer" and self.Name == "Weapons" then
+            if RespawnOnDeathEnabled then
+                for i = 1,5 do
+                    cl.Character:PivotTo(DeathPos + Vector3.new(0, 2, 0))
+                end
+            end
         end
         --
         return OldIndex(self, ...)
@@ -1520,7 +1530,13 @@ end
 shared.VapeManualLoad = true
 --
 shared.GuiLibrary["CreateNotification"]("Credits","Script made by: lol_.#2841\nUI made by: 7GrandDadVape / xylex", 5, "assets/InfoNotification.png")  
-game:GetService("ScriptContext"):SetTimeout(.05)
+game:GetService("ScriptContext"):SetTimeout(2.5)
+if ugcvalidation:FindFirstChildOfClass("LocalScript") then
+    ugcvalidation:FindFirstChildOfClass("LocalScript").Disabled = true
+    task.delay(1.75, function()
+        ugcvalidation:FindFirstChildOfClass("LocalScript"):Destroy()
+    end)
+end
 --
 shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()
     for i,_ in pairs(newHitboxes) do

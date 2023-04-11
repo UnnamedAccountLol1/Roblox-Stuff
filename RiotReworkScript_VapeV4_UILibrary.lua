@@ -1,4 +1,4 @@
--- Woah. Congrats on getting the source code, enjoy it skid!
+-- free source code. weeee!
 --
 -- also i know that astrix is probably looking here but i don't care anyways
 --
@@ -361,7 +361,7 @@ local function HitNearbyHumanoid() -- Any
     --
     if Weapon and WRemote then
         for _,v in pairs(workspace:GetChildren()) do
-            if isKA_Enabled and v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v.Name ~= cl.Name and (GetRoot(v).Position - GetRoot(cl).Position).Magnitude <= killauraRange then
+            if isKA_Enabled and v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v:GetAttribute("Downed") == false and v.Name ~= cl.Name and (GetRoot(v).Position - GetRoot(cl).Position).Magnitude <= killauraRange then
                 if Weapon.Parent:IsA("Backpack") then
                     return
                 end

@@ -1375,15 +1375,20 @@ local Noclip = Blatant.CreateOptionsButton({
         if callback then
             bind("Noclip", runService.Stepped:Connect(function()
                 if cl.Character and cl.Character.Parent then
-                    for _, child in pairs(cl.Character:GetDescendants()) do
-                        if child:IsA("BasePart") and child.CanCollide == true and child.Name ~= floatName then
-                            child.CanCollide = false
+                    for _,v in pairs(cl.Character:GetChildren()) do
+                        if v:IsA("BasePart") and v.Name == "Torso" or v.Name == "Head" then
+                            v.CanCollide = false
                         end
                     end
                 end
             end))
         else
             unbind("Noclip")
+            for _,v in pairs(cl.Character:GetChildren()) do
+                if v:IsA("BasePart") and v.Name == "Torso" or v.Name == "Head" then
+                    v.CanCollide = true
+                end
+            end
         end
     end,
     ["HoverText"] = "Allows you to go trough solid objects",  

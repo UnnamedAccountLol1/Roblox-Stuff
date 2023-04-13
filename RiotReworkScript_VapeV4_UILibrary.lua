@@ -58,11 +58,13 @@ local canbeKickedFromGame = false
 local myleaderboardframe = nil
 local detectfromTesters = false
 local leaderboardui = cl.PlayerGui and cl.PlayerGui:WaitForChild("Leaderboard")
-for i,v in pairs(leaderboardui.Leaderboard.Inner.ScrollingFrame:GetDescendants()) do
-    if v:IsA("TextLabel") or v.ClassName == "TextLabel" then
-        if v.Text == cl.Name or v.Text == cl.DisplayName then
-            myleaderboardframe = v.Parent.Parent
-        end  
+if leaderboardui then
+    for i,v in pairs(leaderboardui.Leaderboard.Inner.ScrollingFrame:GetDescendants()) do
+        if v:IsA("TextLabel") or v.ClassName == "TextLabel" then
+            if v.Text == cl.Name or v.Text == cl.DisplayName then
+                myleaderboardframe = v.Parent.Parent
+            end  
+        end
     end
 end
 local originalUserId = cl.UserId

@@ -1411,8 +1411,8 @@ local Infjump = Blatant.CreateOptionsButton({
     ["HoverText"] = "average happy mod user",  
 })
 local PassiveGodmode; PassiveGodmode = Blatant.CreateOptionsButton({
-    ["Name"] = "Pacifist godmode",  
-    ["Function"] = function(callback)  
+    ["Name"] = "Pacifist 'godmode'",  
+    ["Function"] = function(callback) 
         if callback then
             if cl.Character then
                 if cl.Character:FindFirstChild("Head") then
@@ -1425,7 +1425,7 @@ local PassiveGodmode; PassiveGodmode = Blatant.CreateOptionsButton({
             end
         end
     end,
-    ["HoverText"] = "Can't attack others, neither they can.",  
+    ["HoverText"] = "Can't attack others, neither they can. (You can be killed with molotovs)",  
 })
 --// Render
 local NoLightingChange = Render.CreateOptionsButton({
@@ -1521,12 +1521,6 @@ if not getgenv()._G.BypassedMetas then
             return task.wait(math.huge) or task.wait(9e9)
         elseif CallMethod == "Kick" and self == cl and not canbeKickedFromGame then
             return task.wait(math.huge) or task.wait(9e9)
-        elseif CallMethod == "InvokeServer" and self.Name == "Weapons" then
-            if RespawnOnDeathEnabled then
-                for i = 1,5 do
-                    cl.Character:PivotTo(DeathPos + Vector3.new(0, 2, 0))
-                end
-            end
         end
         --
         return OldIndex(self, ...)

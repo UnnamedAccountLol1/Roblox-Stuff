@@ -139,10 +139,6 @@ local flip = false
 ]]--
 --// Cooldowns
 local weaponsLibrary = require(rep:WaitForChild("Weapons"))
-local original_equip_delays = {}
-for i,_ in pairs(weaponsLibrary) do
-    original_equip_delays[i] = weaponsLibrary[i].EquipAttackDelay
-end
 --// auras
 local madness_auras = {}
 --// Speed variables
@@ -281,30 +277,26 @@ local function PlayAnim(id, speed)
     local r = cl.Character:WaitForChild("Humanoid").Animator:LoadAnimation(a)
     r:Play(); r:AdjustSpeed(tonumber(speed))
 end 
-local function getDistance(from, to, precise)
+local function getDistance(from, to)
     local isVector = false
     if typeof(from) == "Vector3" and typeof(to) == "Vector3" then
         isVector = true
     end
     if isVector then
-        if precise then
-            return math.floor((from - to).Magnitude)
-        else
-            return (from - to).Magnitude
-        end
+        return (from - to).Magnitude
     else
-        if precise then
-            return math.floor((from.Position - to.Position).Magnitude)
-        else
-            return (from.Position - to.Position).Magnitude
-        end
+        return (from.Position - to.Position).Magnitude
     end
 end
-local function isAlive(player)
-    if player then
-        return player and player.Character and player.Character.Parent ~= nil and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("Humanoid")
+local function isAlive(inst)
+    if inst ~= nil then
+        if inst:IsA("Player") then
+            return inst.Character and inst.Character.Parent ~= nil or inst.Character:IsDescendantOf(workspace) and inst.Character:FindFirstChildOfClass("Humanoid") and inst.Character:FindFirstChildOfClass("Humanoid").Health > 0
+        elseif inst:IsA("Model") then
+            return inst.Parent ~= nil or inst:IsDescendantOf(workspace) and inst:FindFirstChildOfClass("Humanoid") and inst:FindFirstChildOfClass("Humanoid").Health > 0
+        end
     end
-    return cl and cl.Character and cl.Character.Parent ~= nil and cl.Character:FindFirstChild("HumanoidRootPart") and cl.Character:FindFirstChild("Head") and cl.Character:FindFirstChild("Humanoid")
+    return cl.Character and cl.Character.Parent ~= nil and cl.Character:FindFirstChildOfClass("Humanoid") and cl.Character:FindFirstChildOfClass("Humanoid").Health > 0
 end
 local function getRandomBodyPart(character) -- how would you deal with this astrix?
     local selected
@@ -316,9 +308,9 @@ local function getRandomBodyPart(character) -- how would you deal with this astr
 end
 local function GetRoot(obj)
     if obj:IsA("Player") then
-        return obj.Character and obj.Character:FindFirstChild("HumanoidRootPart") or obj.Character:FindFirstChild("Torso") or obj.Character.PrimaryPart
+        return obj.Character and obj.Character:FindFirstChild("HumanoidRootPart") or obj.Character:FindFirstChild("Torso") or obj.Character.PrimaryPart or obj.Character.Head
     elseif obj:IsA("Model") then
-        return obj and obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj.PrimaryPart
+        return obj and obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso") or obj.PrimaryPart or obj.Head
     end
 end
 local function FindValidWeapon()
@@ -338,7 +330,7 @@ local function HitNearbyPlayer() -- Player only.
     --
     if Weapon and WRemote then
         for _,v in pairs(plrs:GetChildren()) do
-            if isKA_Enabled and v.Name ~= cl.Name and v.Character and isAlive(v) and (not v.Character:GetAttribute("Downed")) and isAlive() and getDistance(v.PrimaryPart.Position, GetRoot(cl.Character).Position, false) <= killauraRange then
+            if isKA_Enabled and v.Name ~= cl.Name and v.Character and isAlive(v) and (not v.Character:GetAttribute("Downed")) and isAlive() and getDistance(v.PrimaryPart.Position, GetRoot(cl.Character).Position) <= killauraRange then
                 if Weapon.Parent:IsA("Backpack") then
                     return
                 end
@@ -363,17 +355,18 @@ local function HitNearbyHumanoid() -- Any
     --
     if Weapon and WRemote then
         for _,v in pairs(workspace:GetChildren()) do
-            if isKA_Enabled and v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v:GetAttribute("Downed") == false and v.Name ~= cl.Name and (GetRoot(v).Position - GetRoot(cl).Position).Magnitude <= killauraRange then
+            if isKA_Enabled and (v:IsA("Model") and v:FindFirstChildOfClass("Humanoid")) and v ~= cl.Character and (isAlive(v) and isAlive() and GetRoot(v)) and v:GetAttribute("Downed") == false and getDistance(GetRoot(v), GetRoot(cl)) <= killauraRange then
                 if Weapon.Parent:IsA("Backpack") then
-                    return
+                    break
                 end
-                -- Possible plr
-                local psplayer = plrs:GetPlayerFromCharacter(v)
-                -- Friend check
-                if psplayer and cl:IsFriendsWith(psplayer.UserId) and friendly_mode then
-                    hitVisualEffect(v)
-                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
-                    WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
+                --
+                local psplayer = plrs:FindFirstChild(tostring(v.Name)) or plrs[tostring(v.Name)] or plrs:GetPlayerFromCharacter(v) 
+                if friendly_mode and psplayer then
+                    if cl:IsFriendsWith(psplayer.UserId) == false then
+                        hitVisualEffect(v)
+                        WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                        WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
+                    end
                 else
                     hitVisualEffect(v)
                     WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
@@ -415,6 +408,8 @@ local function MadnessHighlight(toggle)
                 table.insert(madness_auras, b)
             end
         end
+        madnessFakeHighlight.Eyes.CanCollide = false
+        madnessFakeHighlight.Eyes.Massless = true
         madnessFakeHighlight.Eyes.Weld.Part0 = madnessFakeHighlight.Eyes
         madnessFakeHighlight.Eyes.Weld.Part1 = cl.Character.Head
         madnessFakeHighlight.Eyes.CFrame = CFrame.new(cl.Character.Head.CFrame.LookVector)
@@ -456,7 +451,7 @@ local function getWeaponCooldown() -- going to make this default if astrix adds 
     local tool = cl.Character and cl.Character:FindFirstChildOfClass("Tool")
     if (not table.find(healItems, tool.Name)) then
         if tool.Name == "Chainsaw" then
-            return weaponsLibrary[tool.Name].AttackWindow or .05
+            return weaponsLibrary[tool.Name].AttackWindow or .025
         else
             return weaponsLibrary[tool.Name].AttackDebounce or .5
         end
@@ -888,7 +883,7 @@ local KillAura = Combat.CreateOptionsButton({
             bind("KillAuraStuff", runService.RenderStepped:Connect(function()
                 for i,v in pairs(workspace:GetChildren()) do
                     if isKA_Enabled and killauralookat and (cl.Character and cl.Character:FindFirstChildOfClass("Tool")) then
-                        if v.Name ~= cl.Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (not v:GetAttribute("Downed")) and isAlive() and getDistance(v.Torso.Position, cl.Character.Torso.Position, false) <= killauraRange then
+                        if v.Name ~= cl.Name and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (not v:GetAttribute("Downed")) and isAlive() and getDistance(v.Torso.Position, cl.Character.Torso.Position) <= killauraRange then
                             if killauralookat and cl.Character and v then
                                 pcall(function()
                                     local root1, root2 = v and v.HumanoidRootPart or v.Torso or v.PrimaryPart, cl.Character and cl.Character.HumanoidRootPart or cl.Character.Torso or cl.Character.PrimaryPart
@@ -933,7 +928,7 @@ local KillAura = Combat.CreateOptionsButton({
             unbind("KillAuraStuff")
         end
     end,
-    ["HoverText"] = "Attacks players around you without having to click or look at them",  
+    ["HoverText"] = "Attacks players around you automatically.",  
 })
 KillAura.CreateSlider({
     ["Name"] = "Range",  
@@ -1228,11 +1223,11 @@ local AntiStomp = Blatant.CreateOptionsButton({
         if callback then
             bind("AntiStomp", runService.RenderStepped:Connect(function()
                 if cl.Character then
-                    if (cl.Character and cl.Character:FindFirstChild("Torso") and cl.Character:FindFirstChild("Head") and cl.Character:FindFirstChildOfClass("Humanoid")) and (cl.Character:FindFirstChildOfClass("Humanoid").Health <= 5 or cl.Character:GetAttribute("Downed")) then
+                    if (cl.Character and cl.Character:FindFirstChild("Torso") and cl.Character:FindFirstChildOfClass("Humanoid")) and (cl.Character:FindFirstChildOfClass("Humanoid").Health <= 3 or cl.Character:GetAttribute("Downed")) then
                         if cl.Character.Torso:FindFirstChild("Neck") then
                             cl.Character.Torso.Neck:Destroy()
                         else
-                            cl.Character:Destroy()
+                            cl.Character.HumanoidRootPart:Destroy()
                         end    
                     end
                 end
@@ -1492,7 +1487,9 @@ local Gravity = World.CreateOptionsButton({
     ["Name"] = "Gravity",  
     ["Function"] = function(callback)  
         gravityEnabled = callback
-        if (not callback) then
+        if callback then
+            workspace.Gravity = gravval or 196.2
+        else
             workspace.Gravity = 196.2
         end
     end,

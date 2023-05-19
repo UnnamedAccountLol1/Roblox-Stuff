@@ -112,7 +112,7 @@ local ReachDirectionValue = 0
 --// The MAIN remote
 local MainRemote = rep:WaitForChild("Remotes").MainRemote
 --// KA Variables
-local killauraRange = 10.15
+local killauraRange = 15 -- 10.15
 local isKA_Enabled = false
 local friendly_mode = false
 local alwaysJump = false
@@ -150,60 +150,87 @@ local healItems = {"Pizza", "Apple", "Cheese", "Burger", "Bandage Kit", "Rage Po
 local bodyParts = {"Head", "Left Arm", "Left Leg", "Right Arm", "Right Leg", "Torso"}
 local oldBodyPart = nil
 --// Executor variables
-local getasset = getsynasset or getcustomasset or function(location) return "rbxasset://"..location end
 local requestfunc = syn and syn.request or http and http.request or http_request or fluxus and fluxus.request or request or function(tab)
 	if tab.Method == "GET" then
 		return { Body = game:HttpGet(tab.Url, true), Headers = {}, StatusCode = 200 } end
         return { Body = "bad exploit", Headers = {}, StatusCode = 404 } end 
+        
+local getasset = getsynasset or getcustomasset or function(location) return "rbxasset://"..location end
 --// Fury theme
 local fury_theme 
 local madness_theme
 local old_madness_themes1
 local old_madness_themes2
-if game:GetService("CoreGui"):FindFirstChild("FURY_THEME.mp3") then
-    fury_theme = game:GetService("CoreGui"):FindFirstChild("FURY_THEME.mp3")
+local crg = game:GetService("CoreGui")
+--
+-- fury :  writefile("RIOT_FURY_THEME.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1075235708345798707/EvansUK_Hardcore_mix.mp3", Method = 'GET'}).Body)   
+-- oldmadness 0 :  writefile("OldMadness0.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1076644998755401938/The_Power_of_Madness.mp3", Method = 'GET'}).Body)   
+-- oldmadness 1 : writefile("OldMadness1.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1076637686179307561/Nightmare_System.mp3", Method = 'GET'}).Body)
+--
+local function GetLocalAsset(name, data)
+    local didItWork, value = pcall(function()
+        return getasset(tostring(name))
+    end)
+    if didItWork then
+        return value
+    else
+        writefile(tostring(name), requestfunc(data).Body)
+        print(getasset(name))
+        return getasset(name)
+    end
+end
+--
+local gotfury,furyasset = pcall(function()
+    return getasset("fury.mp3")
+end)
+if furyasset == nil then
+    shared.GuiLibrary["CreateNotification"]("Creating themes...","This will not happen again if they already exists.", 3, "assets/InfoNotification.png")
+end
+-- This is a pain. I hate you fluxus!!!!!!1
+if crg:FindFirstChild("fury") then
+    fury_theme = crg:FindFirstChild("fury")
 else
-    shared.GuiLibrary["CreateNotification"]("Creating fury theme...","This will not happen again if it already exists.", 3, "assets/InfoNotification.png")
-    fury_theme = Instance.new("Sound", game:GetService("CoreGui"))
-    pcall(delfile, "RIOT_FURY_THEME.mp3")
-    writefile("RIOT_FURY_THEME.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1075235708345798707/EvansUK_Hardcore_mix.mp3", Method = 'GET'}).Body)   
-    fury_theme.TimePosition = 0
-    fury_theme.Name = "FURY_THEME.mp3"
+    fury_theme = Instance.new("Sound", crg)
+    fury_theme.Name = "fury"
     fury_theme.Volume = 0
     fury_theme.Looped = true
-    fury_theme.SoundId = getasset("RIOT_FURY_THEME.mp3")  
+    local s,vvv = pcall(function()
+        return getasset("fury.mp3")
+    end)
+    if vvv then
+        fury_theme.SoundId = vvv
+    else
+        writefile("fury.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1075235708345798707/EvansUK_Hardcore_mix.mp3", Method = 'GET'}).Body)
+        fury_theme.SoundId = getasset("fury.mp3")
+    end    
 end
-if game:GetService("CoreGui"):FindFirstChild("ORIGINAL_MADNESS_THEME") then
-    madness_theme = game:GetService("CoreGui"):FindFirstChild("ORIGINAL_MADNESS_THEME") 
+if crg:FindFirstChild("ORIGINAL_MADNESS_THEME") then
+    madness_theme = crg:FindFirstChild("ORIGINAL_MADNESS_THEME") 
 else
-    madness_theme = Instance.new("Sound", game:GetService("CoreGui"))
+    madness_theme = Instance.new("Sound", crg)
     madness_theme.Name = "ORIGINAL_MADNESS_THEME"
     madness_theme.SoundId = "rbxassetid://9735274746"
     madness_theme.Looped = true
 end
-if game:GetService("CoreGui"):FindFirstChild("OldMadness0.mp3") and game:GetService("CoreGui"):FindFirstChild("OldMadness1.mp3") then
-    old_madness_themes1 = game:GetService("CoreGui"):FindFirstChild("OldMadness0.mp3")
-    old_madness_themes2 = game:GetService("CoreGui"):FindFirstChild("OldMadness1.mp3")
+--[[if crg:FindFirstChild("OldMadness0.mp3") and crg:FindFirstChild("OldMadness1.mp3") then
+    old_madness_themes1 = crg:FindFirstChild("OldMadness0.mp3")
+    old_madness_themes2 = crg:FindFirstChild("OldMadness1.mp3")
 else
-    shared.GuiLibrary["CreateNotification"]("Creating old madness themes...","This will not happen again if it already exists.", 3, "assets/InfoNotification.png")
-    old_madness_themes1 = Instance.new("Sound", game:GetService("CoreGui"))
-    pcall(delfile, "OldMadness0.mp3")
-    writefile("OldMadness0.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1076644998755401938/The_Power_of_Madness.mp3", Method = 'GET'}).Body)   
+    old_madness_themes1 = Instance.new("Sound", crg)
     old_madness_themes1.TimePosition = 30
     old_madness_themes1.Name = "OldMadness0.mp3"
     old_madness_themes1.Volume = .45
     old_madness_themes1.Looped = true
-    old_madness_themes1.SoundId = getasset("OldMadness0.mp3")  
+    old_madness_themes1.SoundId = GetLocalAsset("OldMadness0.mp3", {Url = "https://cdn.discordapp.com/attachments/934866325585682503/1076644998755401938/The_Power_of_Madness.mp3", Method = 'GET'})  
     --
-    old_madness_themes2 = Instance.new("Sound", game:GetService("CoreGui"))
-    pcall(delfile, "OldMadness1.mp3")
-    writefile("OldMadness1.mp3", requestfunc({Url = "https://cdn.discordapp.com/attachments/934866325585682503/1076637686179307561/Nightmare_System.mp3", Method = 'GET'}).Body)   
+    old_madness_themes2 = Instance.new("Sound", crg)
     old_madness_themes2.TimePosition = 38
     old_madness_themes2.Name = "OldMadness1.mp3"
     old_madness_themes2.Volume = .45
     old_madness_themes2.Looped = true
-    old_madness_themes2.SoundId = getasset("OldMadness1.mp3") 
-end
+    old_madness_themes2.SoundId = GetLocalAsset("OldMadness1.mp3", {Url = "https://cdn.discordapp.com/attachments/934866325585682503/1076637686179307561/Nightmare_System.mp3", Method = 'GET'}) 
+end]]--
+
 if Krnl or KRNL_LOADED then
     isUsingKRNL = true
     local f = shared.GuiLibrary["CreateNotification"]("Exploit API warning (KRNL)", "Some assets will not load while using KRNL\nYou have a high chance of being banned by unexpected client behavior too.", 8, "assets/WarningNotification.png")
@@ -246,19 +273,20 @@ local function hitVisualEffect(char)
         deb:AddItem(highlight, 0.65)
     end)
 end
-local function LoadCustomInstance(str) -- Thanks RegularVynixu for saving me a headache from inserting them manually
-    if str ~= "" then
-        if str:find("rbxassetid://") or str:find("roblox.com") or tonumber(str) then
-            local numberId = str:gsub("%D", "")
-            return game:GetObjects("rbxassetid://".. numberId)[1]
-        else
-            local fileName = "customObject_".. tick().. ".txt"
-            writefile(fileName, requestfunc({Url = str, Method = "GET"}).Body)
-            return game:GetObjects(getasset(fileName))[1]
-        end
-    end
+local function GetMadnessAssets(str) -- Thanks RegularVynixu for saving me a headache from inserting them manually
+    local fileName = "madnessAssets.txt"
+    local url_ = "https://github.com/UnnamedAccountLol1/Roblox-Stuff/blob/master/MadnessStuff.rbxm?raw=true"
+    local s,val = pcall(function()
+        return getasset(fileName)
+    end)
+    if s then
+        return val
+    else
+        writefile(fileName, requestfunc({Url = url_, Method = "GET"}).Body)
+        return game:GetObjects(getasset(fileName))[1]
+    end 
 end
-madnessFakeStuff = LoadCustomInstance("https://github.com/UnnamedAccountLol1/Roblox-Stuff/blob/master/MadnessStuff.rbxm?raw=true")
+madnessFakeStuff = GetMadnessAssets()
 local function playSound(id, vol, loop)
     local s = Instance.new("Sound", game:GetService("CoreGui"))
     s.Name = "SOUND_"..tonumber(id)
@@ -933,7 +961,7 @@ local KillAura = Combat.CreateOptionsButton({
 KillAura.CreateSlider({
     ["Name"] = "Range",  
     ["Min"] = 1,
-    ["Max"] = 10,
+    ["Max"] = 15,
     ["Function"] = function(val)  
         killauraRange = val
         if killauraCircleRange then
@@ -941,7 +969,7 @@ KillAura.CreateSlider({
         end
     end,
     ["HoverText"] = "How far kill aura attacks a player",  
-    ["Default"] = 10  
+    ["Default"] = 15  
 })
 KillAura.CreateColorSlider({
     ["Name"] = "Target Color",

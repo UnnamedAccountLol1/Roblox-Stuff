@@ -643,27 +643,26 @@ local Madness = Utility.CreateOptionsButton({
                 cl:SetAttribute("MadnessMode", true)
                 if (not oldmadnesstheme and not oldermadnesstheme) then
                     madness_theme:Play()
-                elseif oldmadnesstheme and not oldermadnesstheme then
-                    old_madness_themes1:Play()
-                elseif oldermadnesstheme and not oldmadnesstheme then
-                    old_madness_themes2:Play()
+               -- elseif oldmadnesstheme and not oldermadnesstheme then
+                   -- old_madness_themes1:Play()
+               -- elseif oldermadnesstheme and not oldmadnesstheme then
+                   -- old_madness_themes2:Play()
                 end
                 MadnessHighlight(true)
             end
         else
             madness_theme:Stop()
             madness_theme.TimePosition = 0
-            old_madness_themes1:Stop()
-            old_madness_themes1.TimePosition = 30
-            old_madness_themes2:Stop()
-            old_madness_themes2.TimePosition = 38
+           -- old_madness_themes1:Stop()
+           -- old_madness_themes1.TimePosition = 30
+           -- old_madness_themes2:Stop()
+          -- old_madness_themes2.TimePosition = 38
             cl:SetAttribute("MadnessMode", false)
             MadnessHighlight(false)
         end
     end,
     ["HoverText"] = "Activates or disables the madness attribute", 
 })
-local oldmadness0, oldmadness1
 Madness.CreateToggle({
     ["Name"] = "Effects enabled", 
     ["HoverText"] = "Enables client sided effects for madness, they will be placed back in your character if you die and have this enabled", 
@@ -672,6 +671,8 @@ Madness.CreateToggle({
     end,
     ["Default"] = false 
 })
+--[[local oldmadness0, oldmadness1
+
 oldmadness0 = Madness.CreateToggle({
     ["Name"] = "Old theme", 
     ["HoverText"] = "Enables the old theme for madness (Re-toggle madness if you have already enabled it)", 
@@ -735,7 +736,7 @@ Madness.CreateToggle({
         end
     end,
     ["Default"] = false -- Value upon launch (optional)
-})
+})]]--
 --
 local InfStamina = Utility.CreateOptionsButton({
     ["Name"] = "Infinite stamina",  

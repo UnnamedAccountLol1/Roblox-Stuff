@@ -1252,10 +1252,12 @@ local AntiStomp = Blatant.CreateOptionsButton({
             bind("AntiStomp", runService.RenderStepped:Connect(function()
                 if cl.Character then
                     if (cl.Character and cl.Character:FindFirstChild("Torso") and cl.Character:FindFirstChildOfClass("Humanoid")) and (cl.Character:FindFirstChildOfClass("Humanoid").Health <= 3 or cl.Character:GetAttribute("Downed")) then
-                        if cl.Character.Torso:FindFirstChild("Neck") then
+                        if cl.Character:FindFirstChild("Torso") and cl.Character.Torso:FindFirstChild("Neck") then
                             cl.Character.Torso.Neck:Destroy()
                         else
-                            cl.Character.HumanoidRootPart:Destroy()
+                            if cl.Character:FindFirstChild("HumanoidRootPart") then
+                                cl.Character.HumanoidRootPart:Destroy()
+                            end  
                         end    
                     end
                 end

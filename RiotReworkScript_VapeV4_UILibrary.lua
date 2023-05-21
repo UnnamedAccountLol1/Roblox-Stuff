@@ -458,7 +458,8 @@ local function IsA_Staff(player) -- big mistake to have your mods in a group!
     elseif s and detectfromTesters and rank > 1 then
         return true, rank  
     elseif not s then
-        -- HTTP ERROR 
+        local f = shared.GuiLibrary["CreateNotification"]("Staff detector", "An HTTP error has occurred while checking for "..player.Name, 8, "assets/WarningNotification.png")
+        f.Frame.Frame.ImageColor3 = Color3.fromRGB(236, 129, 44)
     end
 end
 local function getWeaponCooldown() -- going to make this default if astrix adds an anti remote spam or something, big mistake to have your weapon's info in a module!
@@ -803,6 +804,26 @@ local FreePaidEmotes = Utility.CreateOptionsButton({
         bypassEmotes = callback
     end,
     ["HoverText"] = "Why paid for some bad emotes when you can get them for free?",  
+})
+-- You can purchase from a max of 21 studs
+local InstantBuy = Utility.CreateOptionsButton({
+    ["Name"] = "Instant buy",  
+    ["Function"] = function(callback)  
+        if callback then
+            for i,v in pairs(workspace.PBuyables:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    v.HoldDuration = 0
+                end
+            end
+        else
+            for i,v in pairs(workspace.PBuyables:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    v.HoldDuration = 0.75
+                end
+            end
+        end
+    end,
+    ["HoverText"] = "Makes you able to instantly buy any item without having to hold E.",  
 })
 --
 local LeaveOnStaffJoin = Utility.CreateOptionsButton({
@@ -1272,6 +1293,47 @@ bind("LockOn_RunService", runService.RenderStepped:Connect(function() -- Try not
 		uis.MouseIconEnabled = true
 	end
 end))
+local regenammount = 25
+local regendelay = 0.5
+local fastrgbool = false
+local FastRegen = Combat.CreateOptionsButton({
+    ["Name"] = "Modded stamina regen",  
+    ["Function"] = function(callback)  
+        fastrgbool = callback
+        if fastrgbool then
+            task.spawn(function()
+                repeat task.wait(regendelay)
+                    local nv = Instance.new("NumberValue")
+                    nv.Name = workspace:GetAttribute("funny")
+                    nv.Value = regenammount
+                    nv.Parent = cl.PlayerGui
+                    deb:AddItem(nv, 0.15)
+                until not fastrgbool
+            end)
+        end
+    end,
+    ["HoverText"] = "Regen stamina more quickly.", 
+})
+FastRegen.CreateSlider({
+    ["Name"] = "Delay",  
+    ["Min"] = 0,
+    ["Max"] = 10,
+    ["Function"] = function(val)  
+        regendelay = val
+    end,
+    ["HoverText"] = "The delay for regening, modify by clicking the number if you want more precise delays. (Way too low values may cause lag)",  
+    ["Default"] = 0.5  
+})
+FastRegen.CreateSlider({
+    ["Name"] = "Ammount",  
+    ["Min"] = 1,
+    ["Max"] = 100,
+    ["Function"] = function(val)  
+        regenammount = val
+    end,
+    ["HoverText"] = "The ammount you will regen",  
+    ["Default"] = 25  
+})
 --// Blatant
 local ReachSlider
 local ReachOffset
@@ -1609,6 +1671,26 @@ local MysteryBoxESP = Render.CreateOptionsButton({
         end
     end,
     ["HoverText"] = "box.",  
+})
+local ccCustomenabled
+local ChatColor = Render.CreateOptionsButton({
+    ["Name"] = "Chat color",  
+    ["Function"] = function(callback)  
+        ccCustomenabled = callback
+        if not callback then
+            cl:SetAttribute("ChatColor", Color3.fromRGB(255, 255, 255))
+        end
+    end,
+    ["HoverText"] = "Change your chat color (client sided)",  
+})
+ChatColor.CreateColorSlider({
+    ["Name"] = "Target Color",
+		["Function"] = function(hue, sat, val) 
+			if ccCustomenabled then 
+				cl:SetAttribute("ChatColor", Color3.fromHSV(hue, sat, val))
+			end
+		end,
+	["Default"] = 1
 })
 --// World
 local gravval = 196.2

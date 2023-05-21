@@ -1673,11 +1673,14 @@ local MysteryBoxESP = Render.CreateOptionsButton({
     ["HoverText"] = "box.",  
 })
 local ccCustomenabled
+local ccColor = Color3.fromHSV(0, 0, 1)
 local ChatColor = Render.CreateOptionsButton({
     ["Name"] = "Chat color",  
     ["Function"] = function(callback)  
         ccCustomenabled = callback
-        if not callback then
+        if callback then
+            cl:SetAttribute("ChatColor", ccColor)
+        else
             cl:SetAttribute("ChatColor", Color3.fromRGB(255, 255, 255))
         end
     end,
@@ -1686,6 +1689,7 @@ local ChatColor = Render.CreateOptionsButton({
 ChatColor.CreateColorSlider({
     ["Name"] = "Target Color",
 		["Function"] = function(hue, sat, val) 
+            ccColor = Color3.fromHSV(hue, sat, val)
 			if ccCustomenabled then 
 				cl:SetAttribute("ChatColor", Color3.fromHSV(hue, sat, val))
 			end

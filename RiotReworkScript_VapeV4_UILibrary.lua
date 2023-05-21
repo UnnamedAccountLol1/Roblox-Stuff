@@ -126,17 +126,6 @@ local fly_vertical_speed = 1
 local fly_up = false
 local fly_down = false
 local flypos_y = 0
---[[
---// Strafe vars
-local strafing = false
-local strafenum = 0
-local oldstrafe = nil
-local lastreal = nil
-local targetstrafeDistance = 8
-local targetstrafespeed = 40
-local targetstrafenum = 0
-local flip = false
-]]--
 --// Cooldowns
 local weaponsLibrary = require(rep:WaitForChild("Weapons"))
 --// auras
@@ -551,22 +540,53 @@ end
 local function isPlayerTargetable(plr, target, friend)
     return plr ~= cl and plr and (friend and friendly_mode and cl:IsFriendsWith(plr and plr.UserId) == false or (not friend)) and isAlive(plr)
 end
-local function GetNearestHumanoidToPosition(player, distance)
-	local closest, returnedplayer = distance, nil
+local function AllNearPosition(distance, ammount, sortfunction, prediction)
+    local returnedplayer = {}
+    local currentammount = 0
     if isAlive() then
-        for i, v in pairs(plrs:GetChildren()) do
-            if isPlayerTargetable((player and v or nil), true, true) and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Head") then
-                pcall(function()
-                    local mag = (cl.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-                    if mag <= closest then
-                        closest = mag
-                        returnedplayer = v                 
+        local sortedentities = {}
+        for i,v in pairs(plrs:GetPlayers()) do
+            if v ~= cl then
+                if (v.Character and cl.Character) and cl.Character:FindFirstChild("CarryWeld") and cl.Character:FindFirstChild("CarryWeld").Part1 == v.Character.Torso then
+                    continue
+                end  
+                --
+                if isPlayerTargetable(v, true, true) and (v.Character and v.Character:FindFirstChildOfClass("Humanoid")) and v.Character:FindFirstChild("Head") and v.Character:FindFirstChildOfClass("Humanoid").Health > 0 and not v.Character:GetAttribute("Downed") then
+                    local playerPosition = v.Character.Humanoid.RootPart.Position
+                    local mag = (cl.Character.HumanoidRootPart.Position - playerPosition).Magnitude
+                    if prediction and mag > distance then
+                        mag = (cl.Character.HumanoidRootPart.Position - playerPosition).Magnitude
                     end
-                end)
+                    if mag <= distance then
+                        table.insert(sortedentities, v.Character.Humanoid)
+                    end
+                end
             end
         end
-	end
-	return returnedplayer
+        if sortfunction then
+            table.sort(sortedentities, sortfunction)
+        end
+        for i,v in pairs(sortedentities) do
+            table.insert(returnedplayer, v)
+            currentammount = currentammount + 1
+            if currentammount >= ammount then
+                break
+            end
+        end
+    end
+    return returnedplayer
+end
+local function getSpeedMultiplier(reduce)
+    local speed = 1
+    if cl.Character then
+        if cl:GetAttribute("RageMode") then
+            speed = speed + 1.25
+        end
+        if cl:GetAttribute("MadnessMode") then
+            speed = speed + 1.5
+        end
+    end
+    return reduce and speed ~= 1 and math.max(speed * (.8 - (.3 * math.floor(speed))), 1) or speed
 end
 --
 local Combat = uilib["ObjectsThatCanBeSaved"]["CombatWindow"]["Api"]
@@ -1110,6 +1130,84 @@ local AutoStomp = Combat.CreateOptionsButton({
     end,
     ["HoverText"] = "Automatically stomps ANY nearby players",  
 })
+--
+local oldmove
+local controlmodule
+local targetstrafeRange = 15
+local TGStrafe = Combat.CreateOptionsButton({
+    ["Name"] = "Target strafe",  
+    ["Function"] = function(callback)  
+        if callback then     
+            task.spawn(function()
+                local rayparams = RaycastParams.new()
+                rayparams.FilterType = Enum.RaycastFilterType.Blacklist
+                rayparams.IgnoreWater = true
+                local ignorelist = {}
+                if cl.Character:FindFirstChild("CarryWeld") then
+                    table.insert(ignorelist, cl.Character)
+                    table.insert(ignorelist, cl.Character:FindFirstChild("CarryWeld").Part1.Parent)
+                else
+                    table.insert(ignorelist, cl.Character)
+                end  
+                rayparams.FilterDescendantsInstances = ignorelist
+                if not controlmodule then
+                    local suc = pcall(function()
+                        controlmodule = require(cl.PlayerScripts.PlayerModule).controls
+                    end)
+                    if not suc then
+                        controlmodule = {}
+                    end
+                end
+                oldmove = controlmodule.moveFunction
+                local ang = 0
+                local oldplr 
+                controlmodule.moveFunction = function(Self, vec, facecam, ...)
+                    if isAlive() then
+                        local plr = AllNearPosition(targetstrafeRange, 10)[1]
+                        plr = plr and workspace:Raycast(plr.RootPart.Position, Vector3.new(0, -70, 0), rayparams) and plr or nil
+                        if plr ~= oldplr then
+                            if plr then
+                                local x,y,z = CFrame.new(plr.RootPart.Position, cl.Character.HumanoidRootPart.Position):ToEulerAnglesXYZ()
+                                ang = math.deg(z)
+                            end
+                            oldplr = plr
+                        end
+                        if plr then
+                            facecam = false
+                            local localPos = CFrame.new(plr.RootPart.Position)
+                            local ray = workspace:Blockcast(localPos, Vector3.new(3, 3, 3), CFrame.Angles(0, math.rad(ang), 0).lookVector * targetstrafeRange, rayparams)
+                            local newPos = localPos + (CFrame.Angles(0, math.rad(ang), 0).lookVector * (ray and ray.Distance - 1 or targetstrafeRange))
+                            local factor = getSpeedMultiplier() > 1.7 and 6 or 4
+                            if not workspace:Raycast(newPos.p, Vector3.new(0, -70, 0), rayparams) then
+                                newPos = localPos
+                                factor = 40
+                            end
+                            if ((cl.Character.HumanoidRootPart.Position * Vector3.new(1, 0, 1)) - (newPos.p * Vector3.new(1, 0, 1))).Magnitude < 4 or ray then
+                                ang = ang + factor % 360
+                            end
+                            vec = (newPos.p - cl.Character.HumanoidRootPart.Position) * Vector3.new(1, 0, 1)
+                        end
+                    end
+                    return oldmove(Self, vec, facecam, ...)
+                end
+            end)
+        else
+            controlmodule.moveFunction = oldmove
+        end
+    end,
+    ["HoverText"] = "Rotates around the nearest player.",  
+})
+TGStrafe.CreateSlider({
+    ["Name"] = "Range",  
+    ["Min"] = 1,
+    ["Max"] = 15,
+    ["Function"] = function(val)  
+        targetstrafeRange = val
+    end,
+    ["HoverText"] = "How far you will rotate around the player",  
+    ["Default"] = 15  
+})
+--
 local currentlylockingon = nil
 local maxLockOnDist = 110
 local LockOn; LockOn = Combat.CreateOptionsButton({

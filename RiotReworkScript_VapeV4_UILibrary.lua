@@ -1733,6 +1733,8 @@ if not getgenv()._G.BypassedMetas then
             return task.wait(math.huge) or task.wait(9e9)
         elseif CallMethod == "Kick" and self == cl and not canbeKickedFromGame then
             return task.wait(math.huge) or task.wait(9e9)
+        elseif CallMethod == "JSONDecode" and not checkcaller() then -- LOL nice crashing method
+            return task.wait(math.huge) or task.wait(9e9)
         end
         --
         return OldIndex(self, ...)

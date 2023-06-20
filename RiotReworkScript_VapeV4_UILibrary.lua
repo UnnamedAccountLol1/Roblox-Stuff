@@ -5,10 +5,11 @@
 -- Credits to 7GrandDad / xylex / developer of vape v4 for roblox and RegularVynixu for some code
 --
 --// Game check
-if game.PlaceId ~= 6664138223 then
+local legacyriot = game.PlaceId == 13754950731
+--[[if game.PlaceId ~= 6664138223 then
     game:GetService("Players").LocalPlayer:Kick("This script only works in "..game:GetService("MarketplaceService"):GetProductInfo(6664138223).Name)
     return
-end
+end]]--
 --
 shared.VapeIndependent = true
 shared.CustomSaveVape = "untitledv4"
@@ -57,8 +58,8 @@ local bodyVelocity_speed = nil
 local canbeKickedFromGame = false
 local myleaderboardframe = nil
 local detectfromTesters = false
-local leaderboardui = cl.PlayerGui and cl.PlayerGui:WaitForChild("Leaderboard")
-if leaderboardui then
+--local leaderboardui = cl.PlayerGui and cl.PlayerGui:WaitForChild("Leaderboard")
+--[[if leaderboardui then
     for i,v in pairs(leaderboardui.Leaderboard.Inner.ScrollingFrame:GetDescendants()) do
         if v:IsA("TextLabel") or v.ClassName == "TextLabel" then
             if v.Text == cl.Name or v.Text == cl.DisplayName then
@@ -66,7 +67,7 @@ if leaderboardui then
             end  
         end
     end
-end
+end]]--
 local originalUserId = cl.UserId
 local madnessFakeLight = nil
 local madnessFakeHighlight = nil
@@ -225,6 +226,9 @@ if Krnl or KRNL_LOADED then
     local f = shared.GuiLibrary["CreateNotification"]("Exploit API warning (KRNL)", "Some assets will not load while using KRNL\nYou have a high chance of being banned by unexpected client behavior too.", 8, "assets/WarningNotification.png")
     f.Frame.Frame.ImageColor3 = Color3.fromRGB(236, 129, 44)
 end
+if legacyriot then
+    shared.GuiLibrary["CreateNotification"]("script", "be aware that some stuff might not work here.", 8, "assets/WarningNotification.png")
+end
 --// Functions
 local function playFuryLocally(v)
     if v then
@@ -356,11 +360,19 @@ local function HitNearbyPlayer() -- Player only.
                 -- Friend check
                 if psplayer and cl:IsFriendsWith(psplayer.UserId) and friendly_mode then
                     hitVisualEffect(v)
-                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    if legacyriot then
+                        WRemote:FireServer(unpack({"S", 1, "the/???"})) -- Does a "pre - hit"
+                    else
+                        WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    end
                     WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
                 else
                     hitVisualEffect(v)
-                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    if legacyriot then
+                        WRemote:FireServer(unpack({"S", 1, "the/???"})) -- Does a "pre - hit"
+                    else
+                        WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    end
                     WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
                 end
             end
@@ -381,12 +393,20 @@ local function HitNearbyHumanoid() -- Any
                 if friendly_mode and psplayer then
                     if cl:IsFriendsWith(psplayer.UserId) == false then
                         hitVisualEffect(v)
-                        WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                        if legacyriot then
+                            WRemote:FireServer(unpack({"S", 1, "the/???"})) -- Does a "pre - hit"
+                        else
+                            WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                        end
                         WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
                     end
                 else
                     hitVisualEffect(v)
-                    WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    if legacyriot then
+                        WRemote:FireServer(unpack({"S", 1, "the/???"})) -- Does a "pre - hit"
+                    else
+                        WRemote:FireServer(unpack({"Z", 1, "the/???"})) -- Does a "pre - hit"
+                    end
                     WRemote:FireServer(unpack({"T", getRandomBodyPart(v), "lol  "}))
                 end
             end
@@ -783,21 +803,6 @@ local InfDash = Utility.CreateOptionsButton({
     ["HoverText"] = "Activates or disables the InfiniteDash attribute",  
 })
 --
-local AntiCombatLog = Utility.CreateOptionsButton({
-    ["Name"] = "Anti combat log",  
-    ["Function"] = function(callback)  
-        if callback then
-            bind("CombatLog", cl:GetAttributeChangedSignal("CombatTime"):Connect(function()
-                cl:SetAttribute("CombatTime", 0)
-                cl:SetAttribute("LastHitBy", "")
-            end))
-        else
-            unbind("CombatLog")
-        end
-    end,
-    ["HoverText"] = "Makes combat log not affect you",  
-})
---
 local FreePaidEmotes = Utility.CreateOptionsButton({
     ["Name"] = "Free paid emotes",  
     ["Function"] = function(callback)  
@@ -809,16 +814,17 @@ local FreePaidEmotes = Utility.CreateOptionsButton({
 local InstantBuy = Utility.CreateOptionsButton({
     ["Name"] = "Instant buy",  
     ["Function"] = function(callback)  
-        if callback then
-            for i,v in pairs(workspace.PBuyables:GetDescendants()) do
+        local buyables = legacyriot and workspace.Buyables or workspace.PBuyables
+        if callback then     
+            for i,v in pairs(buyables:GetDescendants()) do
                 if v:IsA("ProximityPrompt") then
                     v.HoldDuration = 0
                 end
             end
         else
-            for i,v in pairs(workspace.PBuyables:GetDescendants()) do
+            for i,v in pairs(buyables:GetDescendants()) do
                 if v:IsA("ProximityPrompt") then
-                    v.HoldDuration = 0.75
+                    v.HoldDuration = .75
                 end
             end
         end
@@ -918,21 +924,19 @@ local NoJumpCooldown = Utility.CreateOptionsButton({
     ["HoverText"] = "Toggles the annoying cooldown for jumping",  
 })
 local PileAura = Utility.CreateOptionsButton({
-    ["Name"] = "Pile aura",  
+    ["Name"] = "InstantPile",  
     ["Function"] = function(callback)  
         if callback then
-            bind("PileAura", runService.RenderStepped:Connect(function()
-                if cl.Character and cl.Character.Parent and cl.Character:FindFirstChild("HumanoidRootPart") then
-                    pcall(function()
-                        local root = cl.Character and cl.Character.HumanoidRootPart or cl.Character.Torso or nil
-                        if root ~= nil then
-                            for i,v in pairs(workspace.Piles:GetDescendants()) do
-                                if v:IsA("ProximityPrompt") and root and not v.Parent:IsA("Script") and (v.Parent.Position - root.Position).Magnitude <= 10 then -- found out that if you grab a pile from +10 studs it doesn't give you anything
-                                    fireproximityprompt(v, 10)
-                                end
-                            end
-                        end
-                    end)
+            for i,v in pairs(workspace.Piles:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then -- found out that if you grab a pile from +10 studs it doesn't give you anything
+                    v.HoldDuration = 0
+                end
+            end
+            bind("PileAura", workspace.Piles.ChildAdded:Connect(function()
+                for i,v in pairs(workspace.Piles:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") then -- found out that if you grab a pile from +10 studs it doesn't give you anything
+                        v.HoldDuration = 0
+                    end
                 end
             end))
         else
@@ -1406,8 +1410,17 @@ local AntiDown = Blatant.CreateOptionsButton({
     end,
     ["HoverText"] = "Getting downed / K.O will not affect you",  
 })
+if legacy then
+    local NoCD = Blatant.CreateOptionsButton({
+        ["Name"] = "NoCD",  
+        ["Function"] = function(callback)  
+            cl:SetAttribute("WeaponSpam", callback)
+        end,
+        ["HoverText"] = "Only works with katana",  
+    })
+end
 local AntiStomp = Blatant.CreateOptionsButton({
-    ["Name"] = "Anti stomp",  
+    ["Name"] = "Anti stomp (doesn't work on legacy)",  
     ["Function"] = function(callback)  
         if callback then
             bind("AntiStomp", runService.RenderStepped:Connect(function()
@@ -1596,23 +1609,6 @@ local Infjump = Blatant.CreateOptionsButton({
     end,
     ["HoverText"] = "average happy mod user",  
 })
-local PassiveGodmode; PassiveGodmode = Blatant.CreateOptionsButton({
-    ["Name"] = "Pacifist 'godmode'",  
-    ["Function"] = function(callback) 
-        if callback then
-            if cl.Character then
-                if cl.Character:FindFirstChild("Head") then
-                    cl.Character:FindFirstChild("Head"):Destroy()
-                    PassiveGodmode["ToggleButton"](false)
-                else
-                    shared.GuiLibrary["CreateNotification"]("Godmode","You already have the passive godmode enabled, reset to disable it", 5, "assets/InfoNotification.png")
-                    PassiveGodmode["ToggleButton"](false)
-                end
-            end
-        end
-    end,
-    ["HoverText"] = "Can't attack others, neither they can. (You can be killed with molotovs)",  
-})
 --// Render
 local NoLightingChange = Render.CreateOptionsButton({
     ["Name"] = "No lighting change",  
@@ -1662,8 +1658,10 @@ local MysteryBoxESP = Render.CreateOptionsButton({
     ["Name"] = "Mystery box ESP",  
     ["Function"] = function(callback)  
         if callback then
-            local highlight = Instance.new("Highlight", game:GetService("CoreGui"))
-            highlight.FillTransparency = .75; highlight.FillColor = Color3.fromRGB(32, 144, 196) highlight.OutlineColor = Color3.fromRGB(32, 144, 196); highlight.OutlineTransparency = 0; highlight.Name = "BOX_ESP"; highlight.Adornee = workspace.Mystery.MysteryBox
+            if not legacyriot then
+                local highlight = Instance.new("Highlight", game:GetService("CoreGui"))
+                highlight.FillTransparency = .75; highlight.FillColor = Color3.fromRGB(32, 144, 196) highlight.OutlineColor = Color3.fromRGB(32, 144, 196); highlight.OutlineTransparency = 0; highlight.Name = "BOX_ESP"; highlight.Adornee = workspace.Mystery.MysteryBox
+            end
         else
             if game:GetService("CoreGui"):FindFirstChild("BOX_ESP") then
                 game:GetService("CoreGui"):FindFirstChild("BOX_ESP"):Destroy()
@@ -1730,6 +1728,8 @@ if not getgenv()._G.BypassedMetas then
         local Args = {...}
         --
         if CallMethod == "FireServer" and self.Name == "MainRemote" and Args[1] == "hello!!" then
+            Args[1] = { ["KeyCode"] = Enum.KeyCode.X }
+            print(Args[1].KeyCode ~= nil and Args[1].KeyCode or Args[1])
             return task.wait(math.huge) or task.wait(9e9)
         elseif CallMethod == "Kick" and self == cl and not canbeKickedFromGame then
             return task.wait(math.huge) or task.wait(9e9)
@@ -1746,12 +1746,6 @@ shared.VapeManualLoad = true
 --
 shared.GuiLibrary["CreateNotification"]("Credits","Script made by: lol_.#2841\nUI made by: 7GrandDadVape / xylex", 5, "assets/InfoNotification.png")  
 game:GetService("ScriptContext"):SetTimeout(2.5)
-if ugcvalidation:FindFirstChildOfClass("LocalScript") then
-    ugcvalidation:FindFirstChildOfClass("LocalScript").Disabled = true
-    task.delay(1.75, function()
-        ugcvalidation:FindFirstChildOfClass("LocalScript"):Destroy()
-    end)
-end
 --
 shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()
     for i,_ in pairs(newHitboxes) do

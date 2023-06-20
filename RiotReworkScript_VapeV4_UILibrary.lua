@@ -1609,6 +1609,24 @@ local Infjump = Blatant.CreateOptionsButton({
     end,
     ["HoverText"] = "average happy mod user",  
 })
+local Godmode; Godmode = Blatant.CreateOptionsButton({
+    ["Name"] = "💀",  
+    ["Function"] = function(callback)  
+        if callback then
+            if cl.Character then 
+                MainRemote:FireServer({["KeyCode"] = Enum.KeyCode.H}) 
+                local f = shared.GuiLibrary["CreateNotification"]("god", "enabled godmode successfully.", 12, "assets/WarningNotification.png")
+                f.Frame.Frame.ImageColor3 = Color3.fromRGB(61, 29, 158)
+                Godmode["ToggleButton"](false) 
+            else
+                local f = shared.GuiLibrary["CreateNotification"]("god", "ur character is missing, dummy.", 12, "assets/WarningNotification.png")
+                f.Frame.Frame.ImageColor3 = Color3.fromRGB(61, 29, 158)
+                Godmode["ToggleButton"](false) 
+            end
+        end
+    end,
+    ["HoverText"] = "yes.....",  
+})
 --// Render
 local NoLightingChange = Render.CreateOptionsButton({
     ["Name"] = "No lighting change",  

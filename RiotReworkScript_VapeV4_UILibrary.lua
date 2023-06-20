@@ -1762,7 +1762,7 @@ end
 --
 shared.VapeManualLoad = true
 --
-shared.GuiLibrary["CreateNotification"]("Credits","Script made by: lol_.#2841\nUI made by: 7GrandDadVape / xylex", 5, "assets/InfoNotification.png")  
+--shared.GuiLibrary["CreateNotification"]("Credits","Script made by: lol_.#2841\nUI made by: 7GrandDadVape / xylex", 5, "assets/InfoNotification.png")  
 game:GetService("ScriptContext"):SetTimeout(2.5)
 --
 shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()

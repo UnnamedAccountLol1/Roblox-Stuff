@@ -609,6 +609,11 @@ local function getSpeedMultiplier(reduce)
     end
     return reduce and speed ~= 1 and math.max(speed * (.8 - (.3 * math.floor(speed))), 1) or speed
 end
+local function getloadedAnimation(id)
+    local anim = Instance.new("Animation")
+    anim.AnimationId = id
+    return cl.Character and cl.Character.Humanoid:LoadAnimation(anim)
+end
 --
 local Combat = uilib["ObjectsThatCanBeSaved"]["CombatWindow"]["Api"]
 local Blatant = uilib["ObjectsThatCanBeSaved"]["BlatantWindow"]["Api"]
@@ -943,7 +948,7 @@ local PileAura = Utility.CreateOptionsButton({
             unbind("PileAura")
         end
     end,
-    ["HoverText"] = "Grabs any pile near you instantly",  
+    ["HoverText"] = "Makes you able to grab piles by only pressing E once.",  
 })
 --// Combat
 local KillAura = Combat.CreateOptionsButton({
@@ -1042,8 +1047,8 @@ KillAura.CreateToggle({
             killauraCircleRange.Parent = workspace.CurrentCamera
             killauraCircleRange.Transparency = .1
             bind("KillAuraVisualizer", runService.RenderStepped:Connect(function()
-                if killauraCircleRange then
-                    killauraCircleRange.Position = cl.Character and cl.Character.HumanoidRootPart.Position - Vector3.new(0, cl.Character.Humanoid.HipHeight, 0) or Vector3.new(1,1,1)
+                if killauraCircleRange and cl.Character then
+                    killauraCircleRange.Position = cl.Character.HumanoidRootPart.Position - Vector3.new(0, cl.Character.Humanoid.HipHeight, 0) or Vector3.new(1,1,1)
                 end
             end))
         else
@@ -1410,7 +1415,7 @@ local AntiDown = Blatant.CreateOptionsButton({
     end,
     ["HoverText"] = "Getting downed / K.O will not affect you",  
 })
-if legacy then
+if legacyriot then
     local NoCD = Blatant.CreateOptionsButton({
         ["Name"] = "NoCD",  
         ["Function"] = function(callback)  
@@ -1420,19 +1425,13 @@ if legacy then
     })
 end
 local AntiStomp = Blatant.CreateOptionsButton({
-    ["Name"] = "Anti stomp (doesn't work on legacy)",  
+    ["Name"] = "Anti stomp",  
     ["Function"] = function(callback)  
         if callback then
             bind("AntiStomp", runService.RenderStepped:Connect(function()
                 if cl.Character then
                     if (cl.Character and cl.Character:FindFirstChild("Torso") and cl.Character:FindFirstChildOfClass("Humanoid")) and (cl.Character:FindFirstChildOfClass("Humanoid").Health <= 3 or cl.Character:GetAttribute("Downed")) then
-                        if cl.Character:FindFirstChild("Torso") and cl.Character.Torso:FindFirstChild("Neck") then
-                            cl.Character.Torso.Neck:Destroy()
-                        else
-                            if cl.Character:FindFirstChild("HumanoidRootPart") then
-                                cl.Character.HumanoidRootPart:Destroy()
-                            end  
-                        end    
+                        cl.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Dead) 
                     end
                 end
             end))
@@ -1609,24 +1608,26 @@ local Infjump = Blatant.CreateOptionsButton({
     end,
     ["HoverText"] = "average happy mod user",  
 })
-local Godmode; Godmode = Blatant.CreateOptionsButton({
-    ["Name"] = "💀",  
-    ["Function"] = function(callback)  
-        if callback then
-            if cl.Character then 
-                MainRemote:FireServer({["KeyCode"] = Enum.KeyCode.H}) 
-                local f = shared.GuiLibrary["CreateNotification"]("god", "enabled godmode successfully.", 12, "assets/WarningNotification.png")
-                f.Frame.Frame.ImageColor3 = Color3.fromRGB(61, 29, 158)
-                Godmode["ToggleButton"](false) 
-            else
-                local f = shared.GuiLibrary["CreateNotification"]("god", "ur character is missing, dummy.", 12, "assets/WarningNotification.png")
-                f.Frame.Frame.ImageColor3 = Color3.fromRGB(61, 29, 158)
-                Godmode["ToggleButton"](false) 
+if legacyriot then
+    local Godmode; Godmode = Blatant.CreateOptionsButton({
+        ["Name"] = "💀",  
+        ["Function"] = function(callback)  
+            if callback then
+                if cl.Character then 
+                    MainRemote:FireServer({["KeyCode"] = Enum.KeyCode.H}) 
+                    local f = shared.GuiLibrary["CreateNotification"]("god", "enabled godmode successfully.", 12, "assets/WarningNotification.png")
+                    f.Frame.Frame.ImageColor3 = Color3.fromRGB(61, 29, 158)
+                    Godmode["ToggleButton"](false) 
+                else
+                    local f = shared.GuiLibrary["CreateNotification"]("god", "ur character is missing, dummy.", 12, "assets/WarningNotification.png")
+                    f.Frame.Frame.ImageColor3 = Color3.fromRGB(61, 29, 158)
+                    Godmode["ToggleButton"](false) 
+                end
             end
-        end
-    end,
-    ["HoverText"] = "yes.....",  
-})
+        end,
+        ["HoverText"] = "yes.....",  
+    })
+end
 --// Render
 local NoLightingChange = Render.CreateOptionsButton({
     ["Name"] = "No lighting change",  
@@ -1747,7 +1748,6 @@ if not getgenv()._G.BypassedMetas then
         --
         if CallMethod == "FireServer" and self.Name == "MainRemote" and Args[1] == "hello!!" then
             Args[1] = { ["KeyCode"] = Enum.KeyCode.X }
-            print(Args[1].KeyCode ~= nil and Args[1].KeyCode or Args[1])
             return task.wait(math.huge) or task.wait(9e9)
         elseif CallMethod == "Kick" and self == cl and not canbeKickedFromGame then
             return task.wait(math.huge) or task.wait(9e9)

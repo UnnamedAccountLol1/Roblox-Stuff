@@ -1795,8 +1795,7 @@ if not getgenv()._G.BypassedMetas then
         local CallMethod = tostring(getnamecallmethod())
         local Args = {...}
         --
-        if CallMethod == "FireServer" and self.Name == "MainRemote" and Args[1] == "hello!!" then
-            Args[1] = { ["KeyCode"] = Enum.KeyCode.X }
+        if CallMethod == "FireServer" and self.Name == "MainRemote" and Args == "hello!!" or Args[1] == "hello!!" then
             return task.wait(math.huge) or task.wait(9e9)
         elseif CallMethod == "Kick" and self == cl and not canbeKickedFromGame then
             return task.wait(math.huge) or task.wait(9e9)
@@ -1813,6 +1812,7 @@ shared.VapeManualLoad = true
 --
 --shared.GuiLibrary["CreateNotification"]("Credits","Script made by: lol_.#2841\nUI made by: 7GrandDadVape / xylex", 5, "assets/InfoNotification.png")  
 game:GetService("ScriptContext"):SetTimeout(2.5)
+UserSettings():GetService("UserGameSettings").RCCProfilerRecordFrameRate = 0
 --
 shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()
     for i,_ in pairs(newHitboxes) do

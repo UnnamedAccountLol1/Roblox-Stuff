@@ -1737,6 +1737,55 @@ Gravity.CreateSlider({
     ["Default"] = 196
 })
 workspace.Gravity = gravityEnabled and tonumber(gravval) or 196.2
+--
+local MadTricky = World.CreateOptionsButton({
+    ["Name"] = "Admin Sign Anims",  
+    ["Function"] = function(callback)  
+        if callback then
+            local signInCharacter = cl.Character:FindFirstChild("Sign")
+            local signInBackpack = cl.Backpack:FindFirstChild("Sign")
+            if signInCharacter then
+                cl.Character.Humanoid:UnequipTools()
+                signInCharacter.Animations.Attack1.AnimationId = "rbxassetid://6855672727"
+                signInCharacter.Animations.Attack2.AnimationId = "rbxassetid://6855674834"
+                signInCharacter.Animations.Attack3.AnimationId = "rbxassetid://6855672727"
+                signInCharacter.Animations.Equip.AnimationId = "rbxassetid://6855669802"
+                signInCharacter.Animations.Idle.AnimationId = "rbxassetid://6855666962"
+                signInCharacter.Animations.Disabled = false
+                task.wait(.1)
+                signInCharacter.Parent = cl.Character
+                return 
+            elseif signInBackpack then
+                cl.Character.Humanoid:UnequipTools()
+                signInBackpack.Animations.Attack1.AnimationId = "rbxassetid://6855672727"
+                signInBackpack.Animations.Attack2.AnimationId = "rbxassetid://6855674834"
+                signInBackpack.Animations.Attack3.AnimationId = "rbxassetid://6855672727"
+                signInBackpack.Animations.Equip.AnimationId = "rbxassetid://6855669802"
+                signInBackpack.Animations.Idle.AnimationId = "rbxassetid://6855666962"
+                signInBackpack.Animations.Disabled = false
+                task.wait(.1)
+                signInBackpack.Parent = cl.Character
+                return 
+            end
+        else -- set to default.
+            local signInCharacter = cl.Character:FindFirstChild("Sign")
+            local signInBackpack = cl.Backpack:FindFirstChild("Sign")
+            if signInCharacter then
+                cl.Character.Humanoid:UnequipTools()
+                signInCharacter.Animations.Disabled = true
+                task.wait(.1)
+                signInCharacter.Parent = cl.Character
+                return 
+            elseif signInBackpack then
+                cl.Character.Humanoid:UnequipTools()
+                signInCharacter.Animations.Disabled = true
+                task.wait(.1)
+                signInBackpack.Parent = cl.Character
+                return 
+            end
+        end
+    end,
+})
 --// End of script
 local hooked_emotes = hookfunction(game:GetService("MarketplaceService").UserOwnsGamePassAsync, function(...)
     return bypassEmotes
